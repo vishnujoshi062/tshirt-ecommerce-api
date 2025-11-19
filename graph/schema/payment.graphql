@@ -1,0 +1,18 @@
+type RazorpayOrder {
+  id: String!
+  amount: Float!
+  currency: String!
+  receipt: String
+}
+
+input VerifyPaymentInput {
+  orderID: ID!
+  razorpayOrderID: String!
+  razorpayPaymentID: String!
+  razorpaySignature: String!
+}
+
+extend type Mutation {
+  createRazorpayOrder(orderID: ID!): RazorpayOrder!
+  verifyPayment(input: VerifyPaymentInput!): Payment!
+}

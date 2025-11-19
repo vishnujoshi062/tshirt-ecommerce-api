@@ -1,0 +1,46 @@
+type Order {
+  id: ID!
+  userID: ID!
+  items: [OrderItem!]!
+  totalAmount: Float!
+  status: String!
+  shippingAddress: String!
+  payment: Payment
+  createdAt: String!
+  updatedAt: String!
+}
+
+type OrderItem {
+  id: ID!
+  orderID: ID!
+  variant: ProductVariant!
+  quantity: Int!
+  unitPrice: Float!
+  subtotal: Float!
+}
+
+type Payment {
+  id: ID!
+  orderID: ID!
+  amount: Float!
+  status: String!
+  paymentMethod: String!
+  transactionID: String
+  createdAt: String!
+}
+
+input CreateOrderInput {
+  shippingAddress: String!
+}
+
+extend type Query {
+  myOrders: [Order!]!
+  order(id: ID!): Order
+  allOrders(status: String): [Order!]!
+}
+
+extend type Mutation {
+  createOrder(input: CreateOrderInput!): Order!
+  updateOrderStatus(orderID: ID!, status: String!): Order!
+  cancelOrder(orderID: ID!): Order!
+}

@@ -1,0 +1,60 @@
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  designImageURL: String!
+  basePrice: Float!
+  isActive: Boolean!
+  variants: [ProductVariant!]!
+  createdAt: String!
+}
+
+type ProductVariant {
+  id: ID!
+  productID: ID!
+  size: String!
+  color: String
+  priceModifier: Float!
+  sku: String!
+  price: Float!
+  inventory: Inventory!
+  product: Product!
+}
+
+type Inventory {
+  id: ID!
+  variantID: ID!
+  stockQuantity: Int!
+  reservedQuantity: Int!
+  availableQuantity: Int!
+}
+
+input ProductInput {
+  name: String!
+  description: String
+  designImageURL: String!
+  basePrice: Float!
+}
+
+input ProductVariantInput {
+  productID: ID!
+  size: String!
+  color: String
+  priceModifier: Float!
+  sku: String!
+  stockQuantity: Int!
+}
+
+extend type Query {
+  products(isActive: Boolean): [Product!]!
+  product(id: ID!): Product
+  productsByCategory(category: String!): [Product!]!
+}
+
+extend type Mutation {
+  createProduct(input: ProductInput!): Product!
+  updateProduct(id: ID!, input: ProductInput!): Product!
+  deleteProduct(id: ID!): Boolean!
+  createProductVariant(input: ProductVariantInput!): ProductVariant!
+  updateInventory(variantID: ID!, quantity: Int!): Inventory!
+}
