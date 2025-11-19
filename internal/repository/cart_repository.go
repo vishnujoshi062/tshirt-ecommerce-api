@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
+	"tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
 )
 

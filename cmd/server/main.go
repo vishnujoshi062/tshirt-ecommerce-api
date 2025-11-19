@@ -8,11 +8,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/config"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/database"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
+	"tshirt-ecommerce-api/config"
+	"tshirt-ecommerce-api/graph"
+	"tshirt-ecommerce-api/graph/generated"
+	"tshirt-ecommerce-api/internal/database"
+	"tshirt-ecommerce-api/internal/middleware"
 )
 
 func main() {

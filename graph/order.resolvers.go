@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
+	"tshirt-ecommerce-api/graph/model"
+	"tshirt-ecommerce-api/internal/middleware"
+	"tshirt-ecommerce-api/internal/models"
 )
 
 // MyOrders is the resolver for the myOrders field.

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/repository"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/utils"
+	"tshirt-ecommerce-api/graph/model"
+	"tshirt-ecommerce-api/internal/middleware"
+	"tshirt-ecommerce-api/internal/models"
+	"tshirt-ecommerce-api/internal/repository"
+	"tshirt-ecommerce-api/internal/utils"
 )
 
 // Register is the resolver for the register field.
