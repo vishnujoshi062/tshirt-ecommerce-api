@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"tshirt-ecommerce-api/internal/models"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +15,7 @@ func NewCartRepository(db *gorm.DB) *CartRepository {
 
 func (r *CartRepository) GetCartByUserID(userID uint) (*models.Cart, error) {
 	var cart models.Cart
-	err := r.DB.Preload("Items").Where("user_id = ?", userID).First(&cart).Error
+	err := r.DB.Preload("CartItems").Where("user_id = ?", userID).First(&cart).Error
 	return &cart, err
 }
 

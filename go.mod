@@ -2,8 +2,6 @@ module github.com/vishnujoshi062/tshirt-ecommerce-api
 
 go 1.24.0
 
-replace github.com/vishnujoshi062/tshirt-ecommerce-api => .
-
 require (
 	github.com/99designs/gqlgen v0.17.83
 	github.com/go-chi/chi/v5 v5.2.3
@@ -11,6 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/razorpay/razorpay-go v1.4.0
+	github.com/vektah/gqlparser/v2 v2.5.31
 	golang.org/x/crypto v0.31.0
 	golang.org/x/oauth2 v0.33.0
 	gorm.io/driver/postgres v1.6.0
@@ -34,7 +33,6 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/urfave/cli/v3 v3.6.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.31 // indirect
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/text v0.31.0 // indirect

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"tshirt-ecommerce-api/internal/models"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -19,13 +19,13 @@ func (r *OrderRepository) CreateOrder(order *models.Order) error {
 
 func (r *OrderRepository) GetOrderByID(id uint) (*models.Order, error) {
 	var order models.Order
-	err := r.DB.Preload("Items").First(&order, id).Error
+	err := r.DB.Preload("OrderItems").First(&order, id).Error
 	return &order, err
 }
 
 func (r *OrderRepository) GetOrdersByUserID(userID uint) ([]models.Order, error) {
 	var orders []models.Order
-	err := r.DB.Preload("Items").Where("user_id = ?", userID).Find(&orders).Error
+	err := r.DB.Preload("OrderItems").Where("user_id = ?", userID).Find(&orders).Error
 	return orders, err
 }
 

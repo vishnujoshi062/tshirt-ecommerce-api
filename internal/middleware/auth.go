@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"tshirt-ecommerce-api/internal/utils"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/utils"
 )
 
 type contextKey string

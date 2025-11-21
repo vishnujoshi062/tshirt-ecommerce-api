@@ -13,21 +13,14 @@ resolver:
   layout: follow-schema
   dir: graph
   package: graph
-  filename_template: "{name}.resolvers.go"
 
 autobind:
-  - "github.com/vishnujoshi062/tshirt-ecommerce-api
-/internal/models"
+  - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models
 
 models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID
-      - github.com/99designs/gqlgen/graphql.Int
-      - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
-  Int:
+  Time:
     model:
-      - github.com/99designs/gqlgen/graphql.Int
-      - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
+      - time.Time

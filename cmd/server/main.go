@@ -8,11 +8,13 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
-	"tshirt-ecommerce-api/config"
-	"tshirt-ecommerce-api/graph"
-	"tshirt-ecommerce-api/graph/generated"
-	"tshirt-ecommerce-api/internal/database"
-	"tshirt-ecommerce-api/internal/middleware"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/config"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/database"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/repository"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/service"
 )
 
 func main() {
@@ -23,8 +25,26 @@ func main() {
 	database.Connect()
 	database.Migrate()
 
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(database.DB)
+	productRepo := repository.NewProductRepository(database.DB)
+	cartRepo := repository.NewCartRepository(database.DB)
+	orderRepo := repository.NewOrderRepository(database.DB)
+	paymentRepo := repository.NewPaymentRepository(database.DB)
+
+	// Initialize services
+	paymentService := service.NewPaymentService()
+
 	// Initialize resolver
-	resolver := graph.NewResolver()
+	resolver := &graph.Resolver{
+		DB:                database.DB,
+		UserRepository:    userRepo,
+		ProductRepository: productRepo,
+		CartRepository:    cartRepo,
+		OrderRepository:   orderRepo,
+		PaymentRepository: paymentRepo,
+		PaymentService:    paymentService,
+	}
 
 	// Create GraphQL server
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
