@@ -12,6 +12,7 @@ import (
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/utils"
 	"gorm.io/gorm"
@@ -100,7 +101,19 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, name *string, phon
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
+	// Get user from context
+	claims := middleware.GetUserFromContext(ctx)
+	if claims == nil {
+		return nil, errors.New("unauthorized: no valid token provided")
+	}
+
+	// Get user from database
+	user, err := r.UserRepository.GetUserByID(claims.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
 }
 
 // GetUser is the resolver for the getUser field.
