@@ -157,8 +157,8 @@ type ComplexityRoot struct {
 		PriceModifier func(childComplexity int) int
 		Product       func(childComplexity int) int
 		ProductID     func(childComplexity int) int
+		SKU           func(childComplexity int) int
 		Size          func(childComplexity int) int
-		Sku           func(childComplexity int) int
 	}
 
 	Query struct {
@@ -218,15 +218,15 @@ type MutationResolver interface {
 	RemoveFromCart(ctx context.Context, cartItemID string) (*models.Cart, error)
 	UpdateCartItemQuantity(ctx context.Context, cartItemID string, quantity int) (*models.Cart, error)
 	ClearCart(ctx context.Context) (bool, error)
-	CreateOrder(ctx context.Context, input model.CreateOrderInput) (models.Order, error)
-	UpdateOrderStatus(ctx context.Context, orderID string, status string) (models.Order, error)
-	CancelOrder(ctx context.Context, orderID string) (models.Order, error)
+	CreateOrder(ctx context.Context, input model.CreateOrderInput) (*models.Order, error)
+	UpdateOrderStatus(ctx context.Context, orderID string, status string) (*models.Order, error)
+	CancelOrder(ctx context.Context, orderID string) (*models.Order, error)
 	CreateRazorpayOrder(ctx context.Context, orderID string) (*model.RazorpayOrder, error)
 	VerifyPayment(ctx context.Context, input model.VerifyPaymentInput) (*models.Payment, error)
 	CreateProduct(ctx context.Context, input model.ProductInput) (*models.Product, error)
 	UpdateProduct(ctx context.Context, id string, input model.ProductInput) (*models.Product, error)
 	DeleteProduct(ctx context.Context, id string) (bool, error)
-	CreateProductVariant(ctx context.Context, input model.ProductVariantInput) (models.ProductVariant, error)
+	CreateProductVariant(ctx context.Context, input model.ProductVariantInput) (*models.ProductVariant, error)
 	UpdateInventory(ctx context.Context, variantID string, quantity int) (*models.Inventory, error)
 	Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error)
 	Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error)
@@ -236,10 +236,7 @@ type OrderResolver interface {
 	ID(ctx context.Context, obj *models.Order) (string, error)
 	UserID(ctx context.Context, obj *models.Order) (string, error)
 	Items(ctx context.Context, obj *models.Order) ([]*models.OrderItem, error)
-	TotalAmount(ctx context.Context, obj *models.Order) (float64, error)
-	Status(ctx context.Context, obj *models.Order) (string, error)
-	ShippingAddress(ctx context.Context, obj *models.Order) (string, error)
-	Payment(ctx context.Context, obj *models.Order) (*models.Payment, error)
+
 	CreatedAt(ctx context.Context, obj *models.Order) (string, error)
 	UpdatedAt(ctx context.Context, obj *models.Order) (string, error)
 }
@@ -261,20 +258,15 @@ type ProductResolver interface {
 type ProductVariantResolver interface {
 	ID(ctx context.Context, obj *models.ProductVariant) (string, error)
 	ProductID(ctx context.Context, obj *models.ProductVariant) (string, error)
-	Size(ctx context.Context, obj *models.ProductVariant) (string, error)
-	Color(ctx context.Context, obj *models.ProductVariant) (*string, error)
-	PriceModifier(ctx context.Context, obj *models.ProductVariant) (float64, error)
-	Sku(ctx context.Context, obj *models.ProductVariant) (string, error)
+
 	Price(ctx context.Context, obj *models.ProductVariant) (float64, error)
-	Inventory(ctx context.Context, obj *models.ProductVariant) (*models.Inventory, error)
-	Product(ctx context.Context, obj *models.ProductVariant) (*models.Product, error)
 }
 type QueryResolver interface {
 	Ping(ctx context.Context) (*string, error)
 	MyCart(ctx context.Context) (*models.Cart, error)
-	MyOrders(ctx context.Context) ([]models.Order, error)
+	MyOrders(ctx context.Context) ([]*models.Order, error)
 	Order(ctx context.Context, id string) (*models.Order, error)
-	AllOrders(ctx context.Context, status *string) ([]models.Order, error)
+	AllOrders(ctx context.Context, status *string) ([]*models.Order, error)
 	Products(ctx context.Context, isActive *bool) ([]*models.Product, error)
 	Product(ctx context.Context, id string) (*models.Product, error)
 	ProductsByCategory(ctx context.Context, category string) ([]*models.Product, error)
@@ -833,18 +825,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ProductVariant.ProductID(childComplexity), true
+	case "ProductVariant.sku":
+		if e.complexity.ProductVariant.SKU == nil {
+			break
+		}
+
+		return e.complexity.ProductVariant.SKU(childComplexity), true
 	case "ProductVariant.size":
 		if e.complexity.ProductVariant.Size == nil {
 			break
 		}
 
 		return e.complexity.ProductVariant.Size(childComplexity), true
-	case "ProductVariant.sku":
-		if e.complexity.ProductVariant.Sku == nil {
-			break
-		}
-
-		return e.complexity.ProductVariant.Sku(childComplexity), true
 
 	case "Query.allOrders":
 		if e.complexity.Query.AllOrders == nil {
@@ -2471,7 +2463,7 @@ func (ec *executionContext) _Mutation_createOrder(ctx context.Context, field gra
 			return ec.resolvers.Mutation().CreateOrder(ctx, fc.Args["input"].(model.CreateOrderInput))
 		},
 		nil,
-		ec.marshalNOrder2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
+		ec.marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
 		true,
 		true,
 	)
@@ -2532,7 +2524,7 @@ func (ec *executionContext) _Mutation_updateOrderStatus(ctx context.Context, fie
 			return ec.resolvers.Mutation().UpdateOrderStatus(ctx, fc.Args["orderID"].(string), fc.Args["status"].(string))
 		},
 		nil,
-		ec.marshalNOrder2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
+		ec.marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
 		true,
 		true,
 	)
@@ -2593,7 +2585,7 @@ func (ec *executionContext) _Mutation_cancelOrder(ctx context.Context, field gra
 			return ec.resolvers.Mutation().CancelOrder(ctx, fc.Args["orderID"].(string))
 		},
 		nil,
-		ec.marshalNOrder2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
+		ec.marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder,
 		true,
 		true,
 	)
@@ -2921,7 +2913,7 @@ func (ec *executionContext) _Mutation_createProductVariant(ctx context.Context, 
 			return ec.resolvers.Mutation().CreateProductVariant(ctx, fc.Args["input"].(model.ProductVariantInput))
 		},
 		nil,
-		ec.marshalNProductVariant2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant,
+		ec.marshalNProductVariant2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant,
 		true,
 		true,
 	)
@@ -3283,7 +3275,7 @@ func (ec *executionContext) _Order_totalAmount(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_Order_totalAmount,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Order().TotalAmount(ctx, obj)
+			return obj.TotalAmount, nil
 		},
 		nil,
 		ec.marshalNFloat2float64,
@@ -3296,8 +3288,8 @@ func (ec *executionContext) fieldContext_Order_totalAmount(_ context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "Order",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
 		},
@@ -3312,7 +3304,7 @@ func (ec *executionContext) _Order_status(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_Order_status,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Order().Status(ctx, obj)
+			return obj.Status, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -3325,8 +3317,8 @@ func (ec *executionContext) fieldContext_Order_status(_ context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "Order",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -3341,7 +3333,7 @@ func (ec *executionContext) _Order_shippingAddress(ctx context.Context, field gr
 		field,
 		ec.fieldContext_Order_shippingAddress,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Order().ShippingAddress(ctx, obj)
+			return obj.ShippingAddress, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -3354,8 +3346,8 @@ func (ec *executionContext) fieldContext_Order_shippingAddress(_ context.Context
 	fc = &graphql.FieldContext{
 		Object:     "Order",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -3370,7 +3362,7 @@ func (ec *executionContext) _Order_payment(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Order_payment,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Order().Payment(ctx, obj)
+			return obj.Payment, nil
 		},
 		nil,
 		ec.marshalOPayment2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐPayment,
@@ -3383,8 +3375,8 @@ func (ec *executionContext) fieldContext_Order_payment(_ context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "Order",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3931,7 +3923,7 @@ func (ec *executionContext) _Product_description(ctx context.Context, field grap
 			return obj.Description, nil
 		},
 		nil,
-		ec.marshalOString2string,
+		ec.marshalOString2ᚖstring,
 		true,
 		false,
 	)
@@ -4180,7 +4172,7 @@ func (ec *executionContext) _ProductVariant_size(ctx context.Context, field grap
 		field,
 		ec.fieldContext_ProductVariant_size,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().Size(ctx, obj)
+			return obj.Size, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -4193,8 +4185,8 @@ func (ec *executionContext) fieldContext_ProductVariant_size(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -4209,7 +4201,7 @@ func (ec *executionContext) _ProductVariant_color(ctx context.Context, field gra
 		field,
 		ec.fieldContext_ProductVariant_color,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().Color(ctx, obj)
+			return obj.Color, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -4222,8 +4214,8 @@ func (ec *executionContext) fieldContext_ProductVariant_color(_ context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -4238,7 +4230,7 @@ func (ec *executionContext) _ProductVariant_priceModifier(ctx context.Context, f
 		field,
 		ec.fieldContext_ProductVariant_priceModifier,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().PriceModifier(ctx, obj)
+			return obj.PriceModifier, nil
 		},
 		nil,
 		ec.marshalNFloat2float64,
@@ -4251,8 +4243,8 @@ func (ec *executionContext) fieldContext_ProductVariant_priceModifier(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
 		},
@@ -4267,7 +4259,7 @@ func (ec *executionContext) _ProductVariant_sku(ctx context.Context, field graph
 		field,
 		ec.fieldContext_ProductVariant_sku,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().Sku(ctx, obj)
+			return obj.SKU, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -4280,8 +4272,8 @@ func (ec *executionContext) fieldContext_ProductVariant_sku(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -4325,7 +4317,7 @@ func (ec *executionContext) _ProductVariant_inventory(ctx context.Context, field
 		field,
 		ec.fieldContext_ProductVariant_inventory,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().Inventory(ctx, obj)
+			return obj.Inventory, nil
 		},
 		nil,
 		ec.marshalNInventory2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐInventory,
@@ -4338,8 +4330,8 @@ func (ec *executionContext) fieldContext_ProductVariant_inventory(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4366,7 +4358,7 @@ func (ec *executionContext) _ProductVariant_product(ctx context.Context, field g
 		field,
 		ec.fieldContext_ProductVariant_product,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ProductVariant().Product(ctx, obj)
+			return obj.Product, nil
 		},
 		nil,
 		ec.marshalNProduct2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProduct,
@@ -4379,8 +4371,8 @@ func (ec *executionContext) fieldContext_ProductVariant_product(_ context.Contex
 	fc = &graphql.FieldContext{
 		Object:     "ProductVariant",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -4486,7 +4478,7 @@ func (ec *executionContext) _Query_myOrders(ctx context.Context, field graphql.C
 			return ec.resolvers.Query().MyOrders(ctx)
 		},
 		nil,
-		ec.marshalNOrder2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ,
+		ec.marshalNOrder2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ,
 		true,
 		true,
 	)
@@ -4597,7 +4589,7 @@ func (ec *executionContext) _Query_allOrders(ctx context.Context, field graphql.
 			return ec.resolvers.Query().AllOrders(ctx, fc.Args["status"].(*string))
 		},
 		nil,
-		ec.marshalNOrder2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ,
+		ec.marshalNOrder2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ,
 		true,
 		true,
 	)
@@ -7998,146 +7990,22 @@ func (ec *executionContext) _Order(ctx context.Context, sel ast.SelectionSet, ob
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "totalAmount":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Order_totalAmount(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Order_totalAmount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "status":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Order_status(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Order_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "shippingAddress":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Order_shippingAddress(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Order_shippingAddress(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "payment":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Order_payment(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._Order_payment(ctx, field, obj)
 		case "createdAt":
 			field := field
 
@@ -8735,146 +8603,22 @@ func (ec *executionContext) _ProductVariant(ctx context.Context, sel ast.Selecti
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "size":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_size(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ProductVariant_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "color":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_color(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._ProductVariant_color(ctx, field, obj)
 		case "priceModifier":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_priceModifier(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ProductVariant_priceModifier(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "sku":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_sku(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ProductVariant_sku(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "price":
 			field := field
 
@@ -8912,77 +8656,15 @@ func (ec *executionContext) _ProductVariant(ctx context.Context, sel ast.Selecti
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "inventory":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_inventory(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ProductVariant_inventory(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "product":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ProductVariant_product(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ProductVariant_product(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9954,7 +9636,7 @@ func (ec *executionContext) marshalNOrder2githubᚗcomᚋvishnujoshi062ᚋtshirt
 	return ec._Order(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNOrder2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Order) graphql.Marshaler {
+func (ec *executionContext) marshalNOrder2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Order) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9978,7 +9660,7 @@ func (ec *executionContext) marshalNOrder2ᚕgithubᚗcomᚋvishnujoshi062ᚋtsh
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNOrder2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder(ctx, sel, v[i])
+			ret[i] = ec.marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9996,6 +9678,16 @@ func (ec *executionContext) marshalNOrder2ᚕgithubᚗcomᚋvishnujoshi062ᚋtsh
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder(ctx context.Context, sel ast.SelectionSet, v *models.Order) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Order(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNOrderItem2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.OrderItem) graphql.Marshaler {
@@ -10175,6 +9867,16 @@ func (ec *executionContext) marshalNProductVariant2ᚕgithubᚗcomᚋvishnujoshi
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNProductVariant2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx context.Context, sel ast.SelectionSet, v *models.ProductVariant) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProductVariant(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNProductVariantInput2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋgraphᚋmodelᚐProductVariantInput(ctx context.Context, v any) (model.ProductVariantInput, error) {

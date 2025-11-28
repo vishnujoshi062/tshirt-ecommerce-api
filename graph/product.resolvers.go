@@ -88,10 +88,10 @@ func (r *mutationResolver) DeleteProduct(ctx context.Context, id string) (bool, 
 }
 
 // CreateProductVariant is the resolver for the createProductVariant field.
-func (r *mutationResolver) CreateProductVariant(ctx context.Context, input model.ProductVariantInput) (models.ProductVariant, error) {
+func (r *mutationResolver) CreateProductVariant(ctx context.Context, input model.ProductVariantInput) (*models.ProductVariant, error) {
 	productID, err := strconv.ParseUint(input.ProductID, 10, 32)
 	if err != nil {
-		return models.ProductVariant{}, fmt.Errorf("invalid product ID: %w", err)
+		return nil, fmt.Errorf("invalid product ID: %w", err)
 	}
 
 	variant := models.ProductVariant{
@@ -104,7 +104,7 @@ func (r *mutationResolver) CreateProductVariant(ctx context.Context, input model
 
 	err = r.DB.Create(&variant).Error
 	if err != nil {
-		return models.ProductVariant{}, fmt.Errorf("failed to create variant: %w", err)
+		return nil, fmt.Errorf("failed to create variant: %w", err)
 	}
 
 	// Create inventory for the variant
@@ -115,10 +115,10 @@ func (r *mutationResolver) CreateProductVariant(ctx context.Context, input model
 
 	err = r.DB.Create(&inventory).Error
 	if err != nil {
-		return models.ProductVariant{}, fmt.Errorf("failed to create inventory: %w", err)
+		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
 
-	return variant, nil
+	return &variant, nil
 }
 
 // UpdateInventory is the resolver for the updateInventory field.
