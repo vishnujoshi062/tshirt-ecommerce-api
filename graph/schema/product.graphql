@@ -5,7 +5,7 @@ type Product {
   designImageURL: String!
   basePrice: Float!
   isActive: Boolean!
-  variants: [ProductVariant!]!
+  variants: [ProductVariant]
   createdAt: String!
 }
 
@@ -17,7 +17,7 @@ type ProductVariant {
   priceModifier: Float!
   sku: String!
   price: Float!
-  inventory: Inventory!
+  inventory: Inventory
   product: Product!
 }
 

@@ -1215,7 +1215,7 @@ extend type Mutation {
   designImageURL: String!
   basePrice: Float!
   isActive: Boolean!
-  variants: [ProductVariant!]!
+  variants: [ProductVariant]
   createdAt: String!
 }
 
@@ -1227,7 +1227,7 @@ type ProductVariant {
   priceModifier: Float!
   sku: String!
   price: Float!
-  inventory: Inventory!
+  inventory: Inventory
   product: Product!
 }
 
@@ -4039,9 +4039,9 @@ func (ec *executionContext) _Product_variants(ctx context.Context, field graphql
 			return obj.Variants, nil
 		},
 		nil,
-		ec.marshalNProductVariant2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariantᚄ,
+		ec.marshalOProductVariant2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -4320,9 +4320,9 @@ func (ec *executionContext) _ProductVariant_inventory(ctx context.Context, field
 			return obj.Inventory, nil
 		},
 		nil,
-		ec.marshalNInventory2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐInventory,
+		ec.marshalOInventory2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐInventory,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -8457,9 +8457,6 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "variants":
 			out.Values[i] = ec._Product_variants(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "createdAt":
 			field := field
 
@@ -8657,9 +8654,6 @@ func (ec *executionContext) _ProductVariant(ctx context.Context, sel ast.Selecti
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "inventory":
 			out.Values[i] = ec._ProductVariant_inventory(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "product":
 			out.Values[i] = ec._ProductVariant_product(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9825,50 +9819,6 @@ func (ec *executionContext) marshalNProductVariant2githubᚗcomᚋvishnujoshi062
 	return ec._ProductVariant(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNProductVariant2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariantᚄ(ctx context.Context, sel ast.SelectionSet, v []models.ProductVariant) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNProductVariant2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNProductVariant2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx context.Context, sel ast.SelectionSet, v *models.ProductVariant) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -10221,6 +10171,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOInventory2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐInventory(ctx context.Context, sel ast.SelectionSet, v *models.Inventory) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Inventory(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrder(ctx context.Context, sel ast.SelectionSet, v *models.Order) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -10240,6 +10197,51 @@ func (ec *executionContext) marshalOProduct2ᚖgithubᚗcomᚋvishnujoshi062ᚋt
 		return graphql.Null
 	}
 	return ec._Product(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOProductVariant2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx context.Context, sel ast.SelectionSet, v models.ProductVariant) graphql.Marshaler {
+	return ec._ProductVariant(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOProductVariant2ᚕgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx context.Context, sel ast.SelectionSet, v []models.ProductVariant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOProductVariant2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐProductVariant(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {

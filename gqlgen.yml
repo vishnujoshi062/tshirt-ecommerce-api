@@ -24,3 +24,6 @@ models:
   Time:
     model:
       - time.Time
+  Inventory:
+    model:
+      - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models.Inventory
