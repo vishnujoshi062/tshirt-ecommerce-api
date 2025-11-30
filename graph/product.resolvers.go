@@ -163,26 +163,6 @@ func (r *productVariantResolver) ProductID(ctx context.Context, obj *models.Prod
 	return strconv.FormatUint(uint64(obj.ProductID), 10), nil
 }
 
-// Size is the resolver for the size field.
-func (r *productVariantResolver) Size(ctx context.Context, obj *models.ProductVariant) (string, error) {
-	return obj.Size, nil
-}
-
-// Color is the resolver for the color field.
-func (r *productVariantResolver) Color(ctx context.Context, obj *models.ProductVariant) (*string, error) {
-	return obj.Color, nil
-}
-
-// PriceModifier is the resolver for the priceModifier field.
-func (r *productVariantResolver) PriceModifier(ctx context.Context, obj *models.ProductVariant) (float64, error) {
-	return obj.PriceModifier, nil
-}
-
-// Sku is the resolver for the sku field.
-func (r *productVariantResolver) Sku(ctx context.Context, obj *models.ProductVariant) (string, error) {
-	return obj.SKU, nil
-}
-
 // Price is the resolver for the price field.
 func (r *productVariantResolver) Price(ctx context.Context, obj *models.ProductVariant) (float64, error) {
 	// Load product to calculate final price
@@ -193,26 +173,6 @@ func (r *productVariantResolver) Price(ctx context.Context, obj *models.ProductV
 	}
 
 	return product.BasePrice + obj.PriceModifier, nil
-}
-
-// Inventory is the resolver for the inventory field.
-func (r *productVariantResolver) Inventory(ctx context.Context, obj *models.ProductVariant) (*models.Inventory, error) {
-	var inventory models.Inventory
-	err := r.DB.Where("variant_id = ?", obj.ID).First(&inventory).Error
-	if err != nil {
-		return nil, err
-	}
-	return &inventory, nil
-}
-
-// Product is the resolver for the product field.
-func (r *productVariantResolver) Product(ctx context.Context, obj *models.ProductVariant) (*models.Product, error) {
-	var product models.Product
-	err := r.DB.First(&product, obj.ProductID).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to load product: %w", err)
-	}
-	return &product, nil
 }
 
 // Products is the resolver for the products field.
@@ -268,3 +228,43 @@ func (r *Resolver) ProductVariant() generated.ProductVariantResolver {
 type inventoryResolver struct{ *Resolver }
 type productResolver struct{ *Resolver }
 type productVariantResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *productResolver) Description(ctx context.Context, obj *models.Product) (*string, error) {
+    return obj.Description, nil
+}
+func (r *productVariantResolver) Size(ctx context.Context, obj *models.ProductVariant) (string, error) {
+	return obj.Size, nil
+}
+func (r *productVariantResolver) Color(ctx context.Context, obj *models.ProductVariant) (*string, error) {
+	return obj.Color, nil
+}
+func (r *productVariantResolver) PriceModifier(ctx context.Context, obj *models.ProductVariant) (float64, error) {
+	return obj.PriceModifier, nil
+}
+func (r *productVariantResolver) Sku(ctx context.Context, obj *models.ProductVariant) (string, error) {
+	return obj.SKU, nil
+}
+func (r *productVariantResolver) Inventory(ctx context.Context, obj *models.ProductVariant) (*models.Inventory, error) {
+	var inventory models.Inventory
+	err := r.DB.Where("variant_id = ?", obj.ID).First(&inventory).Error
+	if err != nil {
+		return nil, err
+	}
+	return &inventory, nil
+}
+func (r *productVariantResolver) Product(ctx context.Context, obj *models.ProductVariant) (*models.Product, error) {
+	var product models.Product
+	err := r.DB.First(&product, obj.ProductID).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to load product: %w", err)
+	}
+	return &product, nil
+}
+*/

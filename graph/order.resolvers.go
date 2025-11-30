@@ -155,31 +155,6 @@ func (r *orderResolver) Items(ctx context.Context, obj *models.Order) ([]*models
 	return items, nil
 }
 
-// TotalAmount is the resolver for the totalAmount field.
-func (r *orderResolver) TotalAmount(ctx context.Context, obj *models.Order) (float64, error) {
-	return obj.TotalAmount, nil
-}
-
-// Status is the resolver for the status field.
-func (r *orderResolver) Status(ctx context.Context, obj *models.Order) (string, error) {
-	return obj.Status, nil
-}
-
-// ShippingAddress is the resolver for the shippingAddress field.
-func (r *orderResolver) ShippingAddress(ctx context.Context, obj *models.Order) (string, error) {
-	return obj.ShippingAddress, nil
-}
-
-// Payment is the resolver for the payment field.
-func (r *orderResolver) Payment(ctx context.Context, obj *models.Order) (*models.Payment, error) {
-	var payment models.Payment
-	err := r.DB.Where("order_id = ?", obj.ID).First(&payment).Error
-	if err != nil {
-		return nil, nil // No payment yet
-	}
-	return &payment, nil
-}
-
 // CreatedAt is the resolver for the createdAt field.
 func (r *orderResolver) CreatedAt(ctx context.Context, obj *models.Order) (string, error) {
 	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
@@ -200,19 +175,19 @@ func (r *orderItemResolver) OrderID(ctx context.Context, obj *models.OrderItem) 
 	return strconv.FormatUint(uint64(obj.OrderID), 10), nil
 }
 
-// ID is the resolver for the id field.
-func (r *paymentResolver) ID(ctx context.Context, obj *models.Payment) (string, error) {
-	return strconv.FormatUint(uint64(obj.ID), 10), nil
-}
+func (r *queryResolver) Orders(ctx context.Context) ([]*models.Order, error) {
+	orders, err := r.OrderRepository.GetAllOrders()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get orders: %w", err)
+	}
 
-// OrderID is the resolver for the orderID field.
-func (r *paymentResolver) OrderID(ctx context.Context, obj *models.Payment) (string, error) {
-	return strconv.FormatUint(uint64(obj.OrderID), 10), nil
-}
+	// Convert to pointer slice
+	var result []*models.Order
+	for i := range orders {
+		result = append(result, &orders[i])
+	}
 
-// CreatedAt is the resolver for the createdAt field.
-func (r *paymentResolver) CreatedAt(ctx context.Context, obj *models.Payment) (string, error) {
-	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+	return result, nil
 }
 
 // MyOrders is the resolver for the myOrders field.
@@ -291,3 +266,69 @@ func (r *Resolver) Payment() generated.PaymentResolver { return &paymentResolver
 type orderResolver struct{ *Resolver }
 type orderItemResolver struct{ *Resolver }
 type paymentResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *orderResolver) TotalAmount(ctx context.Context, obj *models.Order) (float64, error) {
+	return obj.TotalAmount, nil
+}
+func (r *orderResolver) Status(ctx context.Context, obj *models.Order) (string, error) {
+	return obj.Status, nil
+}
+func (r *orderResolver) ShippingAddress(ctx context.Context, obj *models.Order) (string, error) {
+	return obj.ShippingAddress, nil
+}
+func (r *orderResolver) Payment(ctx context.Context, obj *models.Order) (*models.Payment, error) {
+	var payment models.Payment
+	err := r.DB.Where("order_id = ?", obj.ID).First(&payment).Error
+	if err != nil {
+		return nil, nil // No payment yet
+	}
+	return &payment, nil
+}
+*/
+
+// TotalAmount is the resolver for the totalAmount field.
+func (r *orderResolver) TotalAmount(ctx context.Context, obj *models.Order) (float64, error) {
+	return obj.TotalAmount, nil
+}
+
+// Status is the resolver for the status field.
+func (r *orderResolver) Status(ctx context.Context, obj *models.Order) (string, error) {
+	return obj.Status, nil
+}
+
+// ShippingAddress is the resolver for the shippingAddress field.
+func (r *orderResolver) ShippingAddress(ctx context.Context, obj *models.Order) (string, error) {
+	return obj.ShippingAddress, nil
+}
+
+// Payment is the resolver for the payment field.
+func (r *orderResolver) Payment(ctx context.Context, obj *models.Order) (*models.Payment, error) {
+	var payment models.Payment
+	err := r.DB.Where("order_id = ?", obj.ID).First(&payment).Error
+	if err != nil {
+		return nil, nil // No payment yet
+	}
+	return &payment, nil
+}
+
+// ID is the resolver for the id field.
+func (r *paymentResolver) ID(ctx context.Context, obj *models.Payment) (string, error) {
+	return strconv.FormatUint(uint64(obj.ID), 10), nil
+}
+
+// OrderID is the resolver for the orderID field.
+func (r *paymentResolver) OrderID(ctx context.Context, obj *models.Payment) (string, error) {
+	return strconv.FormatUint(uint64(obj.OrderID), 10), nil
+}
+
+// CreatedAt is the resolver for the createdAt field.
+func (r *paymentResolver) CreatedAt(ctx context.Context, obj *models.Payment) (string, error) {
+	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+}
