@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -46,6 +47,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 	if !token.Valid {
 		return nil, errors.New("invalid token")
 	}
+	fmt.Println("JWT_SECRET =", os.Getenv("JWT_SECRET"))
 
 	return claims, nil
 }

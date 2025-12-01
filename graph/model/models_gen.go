@@ -7,13 +7,36 @@ import (
 )
 
 type AddToCartInput struct {
-	VariantID string `json:"variantID"`
-	Quantity  int    `json:"quantity"`
+	CartID    *string `json:"cartId,omitempty"`
+	ProductID string  `json:"productId"`
+	VariantID *string `json:"variantId,omitempty"`
+	Quantity  int     `json:"quantity"`
+}
+
+type AddToCartPayload struct {
+	Cart *models.Cart `json:"cart"`
+}
+
+type AttachCartToUserInput struct {
+	CartID string `json:"cartId"`
+	UserID string `json:"userId"`
+}
+
+type AttachCartToUserPayload struct {
+	Cart *models.Cart `json:"cart"`
 }
 
 type AuthPayload struct {
 	Token string       `json:"token"`
 	User  *models.User `json:"user"`
+}
+
+type ClearCartInput struct {
+	CartID string `json:"cartId"`
+}
+
+type ClearCartPayload struct {
+	Cart *models.Cart `json:"cart"`
 }
 
 type CreateOrderInput struct {
@@ -60,6 +83,15 @@ type RegisterInput struct {
 	Name     string  `json:"name"`
 	Phone    *string `json:"phone,omitempty"`
 	Address  *string `json:"address,omitempty"`
+}
+
+type RemoveCartItemInput struct {
+	CartID     string `json:"cartId"`
+	CartItemID string `json:"cartItemId"`
+}
+
+type RemoveCartItemPayload struct {
+	Cart *models.Cart `json:"cart"`
 }
 
 type VerifyPaymentInput struct {

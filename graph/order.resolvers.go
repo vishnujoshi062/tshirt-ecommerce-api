@@ -14,6 +14,7 @@ import (
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
+	"gorm.io/gorm"
 )
 
 // CreateOrder is the resolver for the createOrder field.
@@ -41,7 +42,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 		return nil, errors.New("cart is empty")
 	}
 
-	// Calculate total
+	// Validate stock + calculate total
 	var totalAmount float64
 	orderItems := make([]models.OrderItem, 0, len(cartItems))
 
@@ -49,6 +50,17 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 		unitPrice := item.Variant.Product.BasePrice + item.Variant.PriceModifier
 		subtotal := unitPrice * float64(item.Quantity)
 		totalAmount += subtotal
+
+		// Check stock
+		var inventory models.Inventory
+		err = r.DB.Where("variant_id = ?", item.VariantID).First(&inventory).Error
+		if err != nil {
+			return nil, fmt.Errorf("failed to get inventory for variant %d: %w", item.VariantID, err)
+		}
+
+		if inventory.StockQuantity < item.Quantity {
+			return nil, fmt.Errorf("not enough stock for variant %d", item.VariantID)
+		}
 
 		orderItems = append(orderItems, models.OrderItem{
 			VariantID: item.VariantID,
@@ -70,6 +82,16 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 	err = r.OrderRepository.CreateOrder(&order)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
+	}
+
+	// Reduce inventory for each ordered item
+	for _, item := range cartItems {
+		err = r.DB.Model(&models.Inventory{}).
+			Where("variant_id = ?", item.VariantID).
+			Update("stock_quantity", gorm.Expr("stock_quantity - ?", item.Quantity)).Error
+		if err != nil {
+			fmt.Printf("Warning: failed to reduce inventory for variant %d: %v\n", item.VariantID, err)
+		}
 	}
 
 	// Clear cart after order creation

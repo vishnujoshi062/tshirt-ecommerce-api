@@ -1,32 +1,70 @@
-type Cart {
-  id: ID!
-  userID: ID!
-  items: [CartItem!]!
-  subtotal: Float!
-  createdAt: String!
-}
+###################################
+# CART SYSTEM TYPES + INPUTS
+###################################
 
 type CartItem {
   id: ID!
-  cartID: ID!
-  variant: ProductVariant!
+  productId: ID!
+  variantId: ID
   quantity: Int!
-  itemTotal: Float!
-  addedAt: String!
+  unitPrice: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Cart {
+  id: ID!
+  userId: ID
+  items: [CartItem!]!
+  totalAmount: Float!
+  createdAt: String!
+  updatedAt: String!
 }
 
 input AddToCartInput {
-  variantID: ID!
+  cartId: ID
+  productId: ID!
+  variantId: ID
   quantity: Int!
 }
 
+input RemoveCartItemInput {
+  cartId: ID!
+  cartItemId: ID!
+}
+
+input ClearCartInput {
+  cartId: ID!
+}
+
+input AttachCartToUserInput {
+  cartId: ID!
+  userId: ID!
+}
+
+type AddToCartPayload {
+  cart: Cart!
+}
+
+type RemoveCartItemPayload {
+  cart: Cart!
+}
+
+type ClearCartPayload {
+  cart: Cart!
+}
+
+type AttachCartToUserPayload {
+  cart: Cart!
+}
+
 extend type Query {
-  myCart: Cart!
+  getCart(cartId: ID, forUser: Boolean = false): Cart!
 }
 
 extend type Mutation {
-  addToCart(input: AddToCartInput!): Cart!
-  removeFromCart(cartItemID: ID!): Cart!
-  updateCartItemQuantity(cartItemID: ID!, quantity: Int!): Cart!
-  clearCart: Boolean!
+  addToCart(input: AddToCartInput!): AddToCartPayload!
+  removeCartItem(input: RemoveCartItemInput!): RemoveCartItemPayload!
+  clearCart(input: ClearCartInput!): ClearCartPayload!
+  attachCartToUser(input: AttachCartToUserInput!): AttachCartToUserPayload!
 }

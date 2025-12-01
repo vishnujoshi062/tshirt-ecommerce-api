@@ -115,6 +115,9 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 
 	return user, nil
 }
+func (r *userResolver) IsAdmin(ctx context.Context, obj *models.User) (bool, error) {
+	return obj.Role == "admin", nil
+}
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*models.User, error) {

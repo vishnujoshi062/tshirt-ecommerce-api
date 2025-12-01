@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
@@ -23,8 +24,9 @@ func (r *cartResolver) ID(ctx context.Context, obj *models.Cart) (string, error)
 }
 
 // UserID is the resolver for the userID field.
-func (r *cartResolver) UserID(ctx context.Context, obj *models.Cart) (string, error) {
-	return strconv.FormatUint(uint64(obj.UserID), 10), nil
+func (r *cartResolver) UserID(ctx context.Context, obj *models.Cart) (*string, error) {
+	userID := strconv.FormatUint(uint64(obj.UserID), 10)
+	return &userID, nil
 }
 
 // Items is the resolver for the items field.
@@ -37,26 +39,33 @@ func (r *cartResolver) Items(ctx context.Context, obj *models.Cart) ([]*models.C
 	return items, nil
 }
 
-// Subtotal is the resolver for the subtotal field.
-func (r *cartResolver) Subtotal(ctx context.Context, obj *models.Cart) (float64, error) {
+// TotalAmount is the resolver for the totalAmount field.
+func (r *cartResolver) TotalAmount(ctx context.Context, obj *models.Cart) (float64, error) {
 	var items []models.CartItem
-	err := r.DB.Where("cart_id = ?", obj.ID).Preload("Variant").Preload("Variant.Product").Find(&items).Error
+	err := r.DB.Preload("Variant").Preload("Variant.Product").
+		Where("cart_id = ?", obj.ID).
+		Find(&items).Error
 	if err != nil {
 		return 0, err
 	}
 
-	var subtotal float64
-	for _, item := range items {
-		price := item.Variant.Product.BasePrice + item.Variant.PriceModifier
-		subtotal += price * float64(item.Quantity)
+	var total float64
+	for _, it := range items {
+		price := it.Variant.Product.BasePrice + it.Variant.PriceModifier
+		total += float64(it.Quantity) * price
 	}
 
-	return subtotal, nil
+	return total, nil
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *cartResolver) CreatedAt(ctx context.Context, obj *models.Cart) (string, error) {
-	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+	return obj.CreatedAt.Format(time.RFC3339), nil
+}
+
+// UpdatedAt is the resolver for the updatedAt field.
+func (r *cartResolver) UpdatedAt(ctx context.Context, obj *models.Cart) (string, error) {
+	return obj.UpdatedAt.Format(time.RFC3339), nil
 }
 
 // ID is the resolver for the id field.
@@ -64,41 +73,56 @@ func (r *cartItemResolver) ID(ctx context.Context, obj *models.CartItem) (string
 	return strconv.FormatUint(uint64(obj.ID), 10), nil
 }
 
-// CartID is the resolver for the cartID field.
-func (r *cartItemResolver) CartID(ctx context.Context, obj *models.CartItem) (string, error) {
-	return strconv.FormatUint(uint64(obj.CartID), 10), nil
-}
-
-// ItemTotal is the resolver for the itemTotal field.
-func (r *cartItemResolver) ItemTotal(ctx context.Context, obj *models.CartItem) (float64, error) {
-	// Load variant and product if not loaded
-	if obj.Variant.ID == 0 {
-		err := r.DB.Preload("Product").First(&obj.Variant, obj.VariantID).Error
-		if err != nil {
-			return 0, err
-		}
+// ProductID is the resolver for the productId field.
+func (r *cartItemResolver) ProductID(ctx context.Context, obj *models.CartItem) (string, error) {
+	// Variant may already be preloaded
+	if obj.Variant.Product.ID != 0 {
+		id := strconv.FormatUint(uint64(obj.Variant.Product.ID), 10)
+		return id, nil
 	}
 
-	if obj.Variant.Product == nil || obj.Variant.Product.ID == 0 {
-		var product models.Product
-		err := r.DB.First(&product, obj.Variant.ProductID).Error
-		if err != nil {
-			return 0, err
-		}
-		obj.Variant.Product = &product
+	// fallback load
+	var v models.ProductVariant
+	if err := r.DB.Preload("Product").First(&v, obj.VariantID).Error; err != nil {
+		return "", err
 	}
 
-	price := obj.Variant.Product.BasePrice + obj.Variant.PriceModifier
-	return price * float64(obj.Quantity), nil
+	id := strconv.FormatUint(uint64(v.Product.ID), 10)
+	return id, nil
 }
 
-// AddedAt is the resolver for the addedAt field.
-func (r *cartItemResolver) AddedAt(ctx context.Context, obj *models.CartItem) (string, error) {
-	return obj.AddedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+// VariantID is the resolver for the variantId field.
+func (r *cartItemResolver) VariantID(ctx context.Context, obj *models.CartItem) (*string, error) {
+	id := strconv.FormatUint(uint64(obj.VariantID), 10)
+	return &id, nil
+}
+
+// UnitPrice is the resolver for the unitPrice field.
+func (r *cartItemResolver) UnitPrice(ctx context.Context, obj *models.CartItem) (float64, error) {
+	if obj.Variant.ID != 0 && obj.Variant.Product.ID != 0 {
+		return obj.Variant.Product.BasePrice + obj.Variant.PriceModifier, nil
+	}
+
+	var v models.ProductVariant
+	if err := r.DB.Preload("Product").First(&v, obj.VariantID).Error; err != nil {
+		return 0, err
+	}
+
+	return v.Product.BasePrice + v.PriceModifier, nil
+}
+
+// CreatedAt is the resolver for the createdAt field.
+func (r *cartItemResolver) CreatedAt(ctx context.Context, obj *models.CartItem) (string, error) {
+	return obj.AddedAt.Format(time.RFC3339), nil
+}
+
+// UpdatedAt is the resolver for the updatedAt field.
+func (r *cartItemResolver) UpdatedAt(ctx context.Context, obj *models.CartItem) (string, error) {
+	return obj.AddedAt.Format(time.RFC3339), nil
 }
 
 // AddToCart is the resolver for the addToCart field.
-func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartInput) (*models.Cart, error) {
+func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartInput) (*model.AddToCartPayload, error) {
 	// Get current user
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
@@ -106,7 +130,10 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 	}
 
 	// Parse variant ID
-	variantID, err := strconv.ParseUint(input.VariantID, 10, 32)
+	if input.VariantID == nil {
+		return nil, fmt.Errorf("variant ID is required")
+	}
+	variantID, err := strconv.ParseUint(*input.VariantID, 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("invalid variant ID: %w", err)
 	}
@@ -144,6 +171,7 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 			CartID:    cart.ID,
 			VariantID: uint(variantID),
 			Quantity:  input.Quantity,
+			AddedAt:   time.Now(),
 		}
 		err = r.CartRepository.AddItem(newItem)
 		if err != nil {
@@ -159,110 +187,135 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 		return nil, fmt.Errorf("failed to reload cart: %w", err)
 	}
 
-	return cart, nil
+	return &model.AddToCartPayload{Cart: cart}, nil
 }
 
-// RemoveFromCart is the resolver for the removeFromCart field.
-func (r *mutationResolver) RemoveFromCart(ctx context.Context, cartItemID string) (*models.Cart, error) {
+// RemoveCartItem is the resolver for the removeCartItem field.
+func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.RemoveCartItemInput) (*model.RemoveCartItemPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized")
 	}
 
-	itemID, err := strconv.ParseUint(cartItemID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid cart item ID: %w", err)
-	}
-
-	err = r.CartRepository.RemoveItem(uint(itemID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to remove item: %w", err)
-	}
-
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
-	}
-
-	return cart, nil
-}
-
-// UpdateCartItemQuantity is the resolver for the updateCartItemQuantity field.
-func (r *mutationResolver) UpdateCartItemQuantity(ctx context.Context, cartItemID string, quantity int) (*models.Cart, error) {
-	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized: please login")
-	}
-
-	itemID, err := strconv.ParseUint(cartItemID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid cart item ID: %w", err)
-	}
+	cartItemID, _ := strconv.ParseUint(input.CartItemID, 10, 32)
 
 	var item models.CartItem
-	err = r.DB.First(&item, uint(itemID)).Error
+	err := r.DB.Preload("Cart").First(&item, uint(cartItemID)).Error
 	if err != nil {
-		return nil, fmt.Errorf("cart item not found: %w", err)
+		return nil, fmt.Errorf("cart item not found")
 	}
 
-	item.Quantity = quantity
-	err = r.CartRepository.UpdateItem(&item)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update quantity: %w", err)
+	if item.Cart.UserID != user.UserID {
+		return nil, fmt.Errorf("forbidden")
+	}
+
+	if err := r.DB.Delete(&item).Error; err != nil {
+		return nil, err
 	}
 
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
+		return nil, err
 	}
 
-	return cart, nil
+	return &model.RemoveCartItemPayload{Cart: cart}, nil
 }
 
 // ClearCart is the resolver for the clearCart field.
-func (r *mutationResolver) ClearCart(ctx context.Context) (bool, error) {
+func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartInput) (*model.ClearCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return false, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized: please login")
 	}
 
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
-		return false, fmt.Errorf("failed to get cart: %w", err)
+		return nil, fmt.Errorf("failed to get cart: %w", err)
 	}
 
 	err = r.CartRepository.ClearCart(cart.ID)
 	if err != nil {
-		return false, fmt.Errorf("failed to clear cart: %w", err)
+		return nil, fmt.Errorf("failed to clear cart: %w", err)
 	}
 
-	return true, nil
+	// return fresh (now empty) cart
+	cart, err = r.CartRepository.GetCartByUserID(user.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload cart: %w", err)
+	}
+
+	return &model.ClearCartPayload{Cart: cart}, nil
 }
 
-// MyCart is the resolver for the myCart field.
-func (r *queryResolver) MyCart(ctx context.Context) (*models.Cart, error) {
-	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+// AttachCartToUser is the resolver for the attachCartToUser field.
+func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.AttachCartToUserInput) (*model.AttachCartToUserPayload, error) {
+	guestID, _ := strconv.ParseUint(input.CartID, 10, 32)
+	userID, _ := strconv.ParseUint(input.UserID, 10, 32)
+
+	var guestCart models.Cart
+	if err := r.DB.Preload("CartItems").First(&guestCart, uint(guestID)).Error; err != nil {
+		return nil, fmt.Errorf("guest cart not found")
 	}
 
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
+	destCart, err := r.CartRepository.GetCartByUserID(uint(userID))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Create new cart if doesn't exist
-			cart = &models.Cart{
-				UserID: user.UserID,
-			}
-			err = r.DB.Create(cart).Error
-			if err != nil {
-				return nil, fmt.Errorf("failed to create cart: %w", err)
-			}
+			destCart = &models.Cart{UserID: uint(userID)}
+			r.DB.Create(destCart)
 		} else {
-			return nil, fmt.Errorf("failed to get cart: %w", err)
+			return nil, err
 		}
 	}
 
-	return cart, nil
+	for _, gi := range guestCart.CartItems {
+		var existing models.CartItem
+		err := r.DB.Where("cart_id=? AND variant_id=?", destCart.ID, gi.VariantID).
+			First(&existing).Error
+
+		if err == nil {
+			existing.Quantity += gi.Quantity
+			r.DB.Save(&existing)
+		} else {
+			newItem := models.CartItem{
+				CartID:    destCart.ID,
+				VariantID: gi.VariantID,
+				Quantity:  gi.Quantity,
+				AddedAt:   time.Now(),
+			}
+			r.DB.Create(&newItem)
+		}
+	}
+
+	r.DB.Delete(&guestCart)
+
+	finalCart, _ := r.CartRepository.GetCartByUserID(uint(userID))
+	return &model.AttachCartToUserPayload{Cart: finalCart}, nil
+}
+
+// GetCart is the resolver for the getCart field.
+func (r *queryResolver) GetCart(ctx context.Context, cartID *string, forUser *bool) (*models.Cart, error) {
+	if forUser != nil && *forUser {
+		user := middleware.GetUserFromContext(ctx)
+		if user == nil {
+			return nil, errors.New("not logged in")
+		}
+		return r.CartRepository.GetCartByUserID(user.UserID)
+	}
+
+	if cartID != nil {
+		idVal, _ := strconv.ParseUint(*cartID, 10, 32)
+		var cart models.Cart
+		err := r.DB.Preload("CartItems").Preload("CartItems.Variant").Preload("CartItems.Variant.Product").
+			First(&cart, uint(idVal)).Error
+
+		if err != nil {
+			return &models.Cart{CartItems: []models.CartItem{}}, nil
+		}
+
+		return &cart, nil
+	}
+
+	return &models.Cart{CartItems: []models.CartItem{}}, nil
 }
 
 // Cart returns generated.CartResolver implementation.
