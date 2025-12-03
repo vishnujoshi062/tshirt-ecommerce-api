@@ -32,7 +32,5 @@ extend type Query {
 }
 
 extend type Mutation {
-  register(input: RegisterInput!): AuthPayload!
-  login(input: LoginInput!): AuthPayload!
   updateProfile(name: String, phone: String, address: String): User!
 }

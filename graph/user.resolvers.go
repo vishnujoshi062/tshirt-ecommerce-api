@@ -11,88 +11,9 @@ import (
 	"strconv"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
-	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/utils"
-	"gorm.io/gorm"
 )
-
-// Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error) {
-	// Check if user already exists
-	existingUser, err := r.UserRepository.GetUserByEmail(input.Email)
-	if err == nil && existingUser.ID != 0 {
-		return nil, errors.New("user with this email already exists")
-	}
-
-	// Hash password
-	hashedPassword, err := utils.HashPassword(input.Password)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
-	}
-
-	// Create user
-	user := &models.User{
-		Email:         input.Email,
-		PasswordHash:  hashedPassword,
-		Name:          input.Name,
-		Role:          "user",
-		OAuthProvider: "local",
-	}
-
-	if input.Phone != nil {
-		user.Phone = *input.Phone
-	}
-
-	if input.Address != nil {
-		user.Address = *input.Address
-	}
-
-	err = r.UserRepository.CreateUser(user)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	// Generate JWT token
-	token, err := utils.GenerateToken(user.ID, user.Email, user.Role)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate token: %w", err)
-	}
-
-	return &model.AuthPayload{
-		Token: token,
-		User:  user,
-	}, nil
-}
-
-// Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
-	// Get user by email
-	user, err := r.UserRepository.GetUserByEmail(input.Email)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid email or password")
-		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	// Check password
-	if !utils.CheckPasswordHash(input.Password, user.PasswordHash) {
-		return nil, errors.New("invalid email or password")
-	}
-
-	// Generate JWT token
-	token, err := utils.GenerateToken(user.ID, user.Email, user.Role)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate token: %w", err)
-	}
-
-	return &model.AuthPayload{
-		Token: token,
-		User:  user,
-	}, nil
-}
 
 // UpdateProfile is the resolver for the updateProfile field.
 func (r *mutationResolver) UpdateProfile(ctx context.Context, name *string, phone *string, address *string) (*models.User, error) {
@@ -115,9 +36,6 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 
 	return user, nil
 }
-func (r *userResolver) IsAdmin(ctx context.Context, obj *models.User) (bool, error) {
-	return obj.Role == "admin", nil
-}
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*models.User, error) {
@@ -138,3 +56,15 @@ func (r *userResolver) CreatedAt(ctx context.Context, obj *models.User) (string,
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *userResolver) IsAdmin(ctx context.Context, obj *models.User) (bool, error) {
+	return obj.Role == "admin", nil
+}
+*/
