@@ -52,10 +52,28 @@ type Mutation struct {
 }
 
 type ProductInput struct {
-	Name           string  `json:"name"`
-	Description    *string `json:"description,omitempty"`
-	DesignImageURL string  `json:"designImageURL"`
-	BasePrice      float64 `json:"basePrice"`
+	Name             string   `json:"name"`
+	Description      *string  `json:"description,omitempty"`
+	DesignImageURL   string   `json:"designImageURL"`
+	BasePrice        float64  `json:"basePrice"`
+	Material         *string  `json:"material,omitempty"`
+	Neckline         *string  `json:"neckline,omitempty"`
+	SleeveType       *string  `json:"sleeveType,omitempty"`
+	Fit              *string  `json:"fit,omitempty"`
+	Brand            *string  `json:"brand,omitempty"`
+	Category         *string  `json:"category,omitempty"`
+	CareInstructions *string  `json:"careInstructions,omitempty"`
+	Weight           *float64 `json:"weight,omitempty"`
+	Featured         *bool    `json:"featured,omitempty"`
+}
+
+type ProductOptions struct {
+	Sizes       []string `json:"sizes"`
+	Colors      []string `json:"colors"`
+	Materials   []string `json:"materials"`
+	Necklines   []string `json:"necklines"`
+	SleeveTypes []string `json:"sleeveTypes"`
+	Fits        []string `json:"fits"`
 }
 
 type ProductVariantInput struct {

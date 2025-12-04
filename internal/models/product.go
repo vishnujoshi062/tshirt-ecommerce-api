@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+	"gorm.io/gorm"
 )
 
 type Product struct {
@@ -10,10 +11,22 @@ type Product struct {
 	Description    *string
 	DesignImageURL string  `gorm:"not null"`
 	BasePrice      float64 `gorm:"not null"`
-	IsActive       bool    `gorm:"default:true"`
-	CreatedAt      time.Time
 
-	Variants []ProductVariant `gorm:"foreignKey:ProductID"`
+	Material         string            `gorm:"type:varchar(100)"`
+    Neckline         string            `gorm:"type:varchar(50)"`
+    SleeveType       string            `gorm:"type:varchar(50)"`
+    Fit              string            `gorm:"type:varchar(50)"`
+    Brand            string            `gorm:"type:varchar(100)"`
+    Category         string            `gorm:"type:varchar(100)"`
+    CareInstructions string            `gorm:"type:text"`
+    Weight           float64           `gorm:"type:decimal(10,2)"`
+    Featured         bool              `gorm:"default:false"`
+    
+    IsActive         bool              `gorm:"default:true"`
+    Variants         []ProductVariant  `gorm:"foreignKey:ProductID"`
+    CreatedAt        time.Time
+    UpdatedAt        time.Time
+    DeletedAt        gorm.DeletedAt    `gorm:"index"`
 }
 
 type ProductVariant struct {

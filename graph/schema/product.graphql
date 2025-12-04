@@ -7,6 +7,15 @@ type Product {
   isActive: Boolean!
   variants: [ProductVariant]
   createdAt: String!
+  material: String
+  neckline: String
+  sleeveType: String
+  fit: String
+  brand: String
+  category: String
+  careInstructions: String
+  weight: Float
+  featured: Boolean
 }
 
 type ProductVariant {
@@ -34,6 +43,15 @@ input ProductInput {
   description: String
   designImageURL: String!
   basePrice: Float!
+  material: String
+  neckline: String
+  sleeveType: String
+  fit: String
+  brand: String
+  category: String
+  careInstructions: String
+  weight: Float
+  featured: Boolean
 }
 
 input ProductVariantInput {
@@ -49,6 +67,7 @@ extend type Query {
   products(isActive: Boolean): [Product!]!
   product(id: ID!): Product
   productsByCategory(category: String!): [Product!]!
+  productOptions: ProductOptions!
 }
 
 extend type Mutation {
@@ -57,4 +76,13 @@ extend type Mutation {
   deleteProduct(id: ID!): Boolean!
   createProductVariant(input: ProductVariantInput!): ProductVariant!
   updateInventory(variantID: ID!, quantity: Int!): Inventory!
+}
+
+type ProductOptions {
+  sizes: [String!]!
+  colors: [String!]!
+  materials: [String!]!
+  necklines: [String!]!
+  sleeveTypes: [String!]!
+  fits: [String!]!
 }

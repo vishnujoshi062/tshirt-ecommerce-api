@@ -222,6 +222,11 @@ func (r *queryResolver) ProductsByCategory(ctx context.Context, category string)
 	panic(fmt.Errorf("not implemented: ProductsByCategory - productsByCategory"))
 }
 
+// ProductOptions is the resolver for the productOptions field.
+func (r *queryResolver) ProductOptions(ctx context.Context) (*model.ProductOptions, error) {
+	panic(fmt.Errorf("not implemented: ProductOptions - productOptions"))
+}
+
 // Inventory returns generated.InventoryResolver implementation.
 func (r *Resolver) Inventory() generated.InventoryResolver { return &inventoryResolver{r} }
 
