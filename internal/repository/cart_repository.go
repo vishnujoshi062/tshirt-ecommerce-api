@@ -13,7 +13,7 @@ func NewCartRepository(db *gorm.DB) *CartRepository {
 	return &CartRepository{DB: db}
 }
 
-func (r *CartRepository) GetCartByUserID(userID uint) (*models.Cart, error) {
+func (r *CartRepository) GetCartByUserID(userID string) (*models.Cart, error) {
 	var cart models.Cart
 	err := r.DB.Preload("CartItems").Where("user_id = ?", userID).First(&cart).Error
 	return &cart, err

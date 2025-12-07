@@ -49,7 +49,7 @@ func (r *OrderRepository) GetAllOrders() ([]models.Order, error) {
 }
 
 // ✅ Fetch orders for a specific user
-func (r *OrderRepository) GetOrdersByUserID(userID uint) ([]models.Order, error) {
+func (r *OrderRepository) GetOrdersByUserID(userID string) ([]models.Order, error) {
 	var orders []models.Order
 
 	err := r.DB.

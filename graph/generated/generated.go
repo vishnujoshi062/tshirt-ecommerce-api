@@ -229,7 +229,7 @@ type ComplexityRoot struct {
 
 type CartResolver interface {
 	ID(ctx context.Context, obj *models.Cart) (string, error)
-	UserID(ctx context.Context, obj *models.Cart) (*string, error)
+
 	Items(ctx context.Context, obj *models.Cart) ([]*models.CartItem, error)
 	TotalAmount(ctx context.Context, obj *models.Cart) (float64, error)
 	CreatedAt(ctx context.Context, obj *models.Cart) (string, error)
@@ -270,7 +270,7 @@ type MutationResolver interface {
 }
 type OrderResolver interface {
 	ID(ctx context.Context, obj *models.Order) (string, error)
-	UserID(ctx context.Context, obj *models.Order) (string, error)
+
 	Items(ctx context.Context, obj *models.Order) ([]*models.OrderItem, error)
 
 	CreatedAt(ctx context.Context, obj *models.Order) (string, error)
@@ -2087,10 +2087,10 @@ func (ec *executionContext) _Cart_userId(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_Cart_userId,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Cart().UserID(ctx, obj)
+			return obj.UserID, nil
 		},
 		nil,
-		ec.marshalOID2ᚖstring,
+		ec.marshalOID2string,
 		true,
 		false,
 	)
@@ -2100,8 +2100,8 @@ func (ec *executionContext) fieldContext_Cart_userId(_ context.Context, field gr
 	fc = &graphql.FieldContext{
 		Object:     "Cart",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -3534,7 +3534,7 @@ func (ec *executionContext) _Order_userID(ctx context.Context, field graphql.Col
 		field,
 		ec.fieldContext_Order_userID,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Order().UserID(ctx, obj)
+			return obj.UserID, nil
 		},
 		nil,
 		ec.marshalNID2string,
@@ -3547,8 +3547,8 @@ func (ec *executionContext) fieldContext_Order_userID(_ context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "Order",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -8387,38 +8387,7 @@ func (ec *executionContext) _Cart(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "userId":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Cart_userId(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._Cart_userId(ctx, field, obj)
 		case "items":
 			field := field
 
@@ -9228,41 +9197,10 @@ func (ec *executionContext) _Order(ctx context.Context, sel ast.SelectionSet, ob
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "userID":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Order_userID(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Order_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "items":
 			field := field
 
@@ -11741,6 +11679,18 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOID2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalID(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {

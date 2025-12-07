@@ -4,10 +4,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/config"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
@@ -18,8 +21,38 @@ import (
 )
 
 func main() {
-	// Load environment variables
-	config.LoadEnv()
+	// Try to load .env file from different possible locations
+	possiblePaths := []string{
+		".env",
+		"../.env",
+		"../../.env",
+		filepath.Join(os.Getenv("PWD"), ".env"),
+	}
+
+	envLoaded := false
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			if err := godotenv.Load(path); err == nil {
+				log.Printf("Loaded .env file from: %s", path)
+				envLoaded = true
+				break
+			} else {
+				log.Printf("Failed to load .env file from %s: %v", path, err)
+			}
+		}
+	}
+
+	if !envLoaded {
+		// Load environment variables from default location
+		config.LoadEnv()
+	}
+
+	// Initialize Clerk SDK with secret key
+	clerkKey := config.GetEnv("CLERK_SECRET_KEY", "")
+	if clerkKey == "" {
+		log.Fatal("CLERK_SECRET_KEY environment variable is required")
+	}
+	clerk.SetKey(clerkKey)
 
 	// Connect to database
 	database.Connect()
@@ -66,7 +99,7 @@ func main() {
 	router.Get("/auth/google", handleGoogleLogin)
 	router.Get("/auth/google/callback", handleGoogleCallback)
 
-	port := os.Getenv("PORT")
+	port := config.GetEnv("PORT", "8081")
 	log.Printf("Server starting on http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }

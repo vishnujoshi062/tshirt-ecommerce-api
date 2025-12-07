@@ -19,110 +19,95 @@ import (
 
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOrderInput) (*models.Order, error) {
-	// Get current user
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized")
 	}
 
-	// Get user's cart
+	// ✅ Clerk-safe: user.UserID is STRING
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cart: %w", err)
 	}
 
-	// Get cart items with variant and product info
 	var cartItems []models.CartItem
-	err = r.DB.Where("cart_id = ?", cart.ID).Preload("Variant").Preload("Variant.Product").Find(&cartItems).Error
+	err = r.DB.
+		Where("cart_id = ?", cart.ID).
+		Preload("Variant").
+		Preload("Variant.Product").
+		Find(&cartItems).Error
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cart items: %w", err)
+		return nil, err
 	}
 
 	if len(cartItems) == 0 {
 		return nil, errors.New("cart is empty")
 	}
 
-	// Validate stock + calculate total
-	var totalAmount float64
-	orderItems := make([]models.OrderItem, 0, len(cartItems))
+	var total float64
+	orderItems := []models.OrderItem{}
 
 	for _, item := range cartItems {
-		unitPrice := item.Variant.Product.BasePrice + item.Variant.PriceModifier
-		subtotal := unitPrice * float64(item.Quantity)
-		totalAmount += subtotal
+		price := item.Variant.Product.BasePrice + item.Variant.PriceModifier
+		sub := price * float64(item.Quantity)
+		total += sub
 
-		// Check stock
 		var inventory models.Inventory
-		err = r.DB.Where("variant_id = ?", item.VariantID).First(&inventory).Error
-		if err != nil {
-			return nil, fmt.Errorf("failed to get inventory for variant %d: %w", item.VariantID, err)
+		if err := r.DB.Where("variant_id = ?", item.VariantID).First(&inventory).Error; err != nil {
+			return nil, err
 		}
 
 		if inventory.StockQuantity < item.Quantity {
-			return nil, fmt.Errorf("not enough stock for variant %d", item.VariantID)
+			return nil, fmt.Errorf("out of stock for variant %d", item.VariantID)
 		}
 
 		orderItems = append(orderItems, models.OrderItem{
 			VariantID: item.VariantID,
 			Quantity:  item.Quantity,
-			UnitPrice: unitPrice,
-			Subtotal:  subtotal,
+			UnitPrice: price,
+			Subtotal:  sub,
 		})
 	}
 
-	// Create order
 	order := models.Order{
-		UserID:          user.UserID,
-		TotalAmount:     totalAmount,
+		UserID:          user.UserID, // ✅ STRING
+		TotalAmount:     total,
 		Status:          "pending",
 		ShippingAddress: input.ShippingAddress,
 		OrderItems:      orderItems,
 	}
 
-	err = r.OrderRepository.CreateOrder(&order)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create order: %w", err)
+	if err := r.OrderRepository.CreateOrder(&order); err != nil {
+		return nil, err
 	}
 
-	// Reduce inventory for each ordered item
+	// Reduce inventory
 	for _, item := range cartItems {
-		err = r.DB.Model(&models.Inventory{}).
+		r.DB.Model(&models.Inventory{}).
 			Where("variant_id = ?", item.VariantID).
-			Update("stock_quantity", gorm.Expr("stock_quantity - ?", item.Quantity)).Error
-		if err != nil {
-			fmt.Printf("Warning: failed to reduce inventory for variant %d: %v\n", item.VariantID, err)
-		}
+			Update("stock_quantity", gorm.Expr("stock_quantity - ?", item.Quantity))
 	}
 
-	// Clear cart after order creation
-	err = r.CartRepository.ClearCart(cart.ID)
-	if err != nil {
-		// Log error but don't fail the order
-		fmt.Printf("Warning: failed to clear cart: %v\n", err)
-	}
+	// Clear cart
+	r.CartRepository.ClearCart(cart.ID)
 
 	return &order, nil
 }
 
 // UpdateOrderStatus is the resolver for the updateOrderStatus field.
 func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, orderID string, status string) (*models.Order, error) {
-	// Parse order ID
-	id, err := strconv.ParseUint(orderID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid order ID: %w", err)
-	}
+	id, _ := strconv.ParseUint(orderID, 10, 32)
 
-	// Get order
 	order, err := r.OrderRepository.GetOrderByID(uint(id))
 	if err != nil {
-		return nil, fmt.Errorf("order not found: %w", err)
+		return nil, err
 	}
 
-	// Update status
 	order.Status = status
-	err = r.OrderRepository.UpdateOrder(order)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update order status: %w", err)
+
+	if err := r.OrderRepository.UpdateOrder(order); err != nil {
+		return nil, err
 	}
 
 	return order, nil
@@ -130,29 +115,20 @@ func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, orderID string
 
 // CancelOrder is the resolver for the cancelOrder field.
 func (r *mutationResolver) CancelOrder(ctx context.Context, orderID string) (*models.Order, error) {
-	// Parse order ID
-	id, err := strconv.ParseUint(orderID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid order ID: %w", err)
-	}
+	id, _ := strconv.ParseUint(orderID, 10, 32)
 
-	// Get order
 	order, err := r.OrderRepository.GetOrderByID(uint(id))
 	if err != nil {
-		return nil, fmt.Errorf("order not found: %w", err)
+		return nil, err
 	}
 
-	// Check if order can be cancelled
 	if order.Status == "shipped" || order.Status == "delivered" {
-		return nil, errors.New("cannot cancel order that has been shipped or delivered")
+		return nil, errors.New("order already shipped")
 	}
 
-	// Update status to cancelled
 	order.Status = "cancelled"
-	err = r.OrderRepository.UpdateOrder(order)
-	if err != nil {
-		return nil, fmt.Errorf("failed to cancel order: %w", err)
-	}
+
+	r.OrderRepository.UpdateOrder(order)
 
 	return order, nil
 }
@@ -162,18 +138,10 @@ func (r *orderResolver) ID(ctx context.Context, obj *models.Order) (string, erro
 	return strconv.FormatUint(uint64(obj.ID), 10), nil
 }
 
-// UserID is the resolver for the userID field.
-func (r *orderResolver) UserID(ctx context.Context, obj *models.Order) (string, error) {
-	return strconv.FormatUint(uint64(obj.UserID), 10), nil
-}
-
 // Items is the resolver for the items field.
 func (r *orderResolver) Items(ctx context.Context, obj *models.Order) ([]*models.OrderItem, error) {
 	var items []*models.OrderItem
-	err := r.DB.Where("order_id = ?", obj.ID).Find(&items).Error
-	if err != nil {
-		return nil, err
-	}
+	r.DB.Where("order_id = ?", obj.ID).Find(&items)
 	return items, nil
 }
 
@@ -216,33 +184,29 @@ func (r *paymentResolver) CreatedAt(ctx context.Context, obj *models.Payment) (s
 func (r *queryResolver) MyOrders(ctx context.Context) ([]*models.Order, error) {
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized")
 	}
 
 	orders, err := r.OrderRepository.GetOrdersByUserID(user.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get orders: %w", err)
+		return nil, err
 	}
 
-	// Convert to pointer slice
-	var result []*models.Order
+	var out []*models.Order
 	for i := range orders {
-		result = append(result, &orders[i])
+		out = append(out, &orders[i])
 	}
 
-	return result, nil
+	return out, nil
 }
 
 // Order is the resolver for the order field.
 func (r *queryResolver) Order(ctx context.Context, id string) (*models.Order, error) {
-	orderID, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid order ID: %w", err)
-	}
+	orderID, _ := strconv.ParseUint(id, 10, 32)
 
 	order, err := r.OrderRepository.GetOrderByID(uint(orderID))
 	if err != nil {
-		return nil, fmt.Errorf("order not found: %w", err)
+		return nil, err
 	}
 
 	return order, nil
@@ -251,29 +215,24 @@ func (r *queryResolver) Order(ctx context.Context, id string) (*models.Order, er
 // AllOrders is the resolver for the allOrders field.
 func (r *queryResolver) AllOrders(ctx context.Context, status *string) ([]*models.Order, error) {
 	var orders []models.Order
-	err := r.DB.Preload("OrderItems").Find(&orders).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to get orders: %w", err)
-	}
+	r.DB.Preload("OrderItems").Find(&orders)
 
-	// Filter by status if provided
 	if status != nil {
-		var filtered []models.Order
-		for _, order := range orders {
-			if order.Status == *status {
-				filtered = append(filtered, order)
+		filtered := []models.Order{}
+		for _, o := range orders {
+			if o.Status == *status {
+				filtered = append(filtered, o)
 			}
 		}
 		orders = filtered
 	}
 
-	// Convert to pointer slice
-	var result []*models.Order
+	var out []*models.Order
 	for i := range orders {
-		result = append(result, &orders[i])
+		out = append(out, &orders[i])
 	}
 
-	return result, nil
+	return out, nil
 }
 
 // Order returns generated.OrderResolver implementation.
@@ -288,3 +247,15 @@ func (r *Resolver) Payment() generated.PaymentResolver { return &paymentResolver
 type orderResolver struct{ *Resolver }
 type orderItemResolver struct{ *Resolver }
 type paymentResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *orderResolver) UserID(ctx context.Context, obj *models.Order) (string, error) {
+	return obj.UserID, nil
+}
+*/

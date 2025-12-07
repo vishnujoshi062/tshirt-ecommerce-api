@@ -8,7 +8,7 @@ import (
 
 type Cart struct {
 	ID        uint `gorm:"primaryKey"`
-	UserID    uint `gorm:"uniqueIndex;not null"`
+	UserID    string `gorm:"uniqueIndex;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

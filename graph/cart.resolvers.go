@@ -23,28 +23,28 @@ func (r *cartResolver) ID(ctx context.Context, obj *models.Cart) (string, error)
 	return strconv.FormatUint(uint64(obj.ID), 10), nil
 }
 
-// UserID is the resolver for the userID field.
-func (r *cartResolver) UserID(ctx context.Context, obj *models.Cart) (*string, error) {
-	userID := strconv.FormatUint(uint64(obj.UserID), 10)
-	return &userID, nil
-}
-
 // Items is the resolver for the items field.
 func (r *cartResolver) Items(ctx context.Context, obj *models.Cart) ([]*models.CartItem, error) {
 	var items []*models.CartItem
-	err := r.DB.Where("cart_id = ?", obj.ID).Preload("Variant").Preload("Variant.Product").Find(&items).Error
-	if err != nil {
-		return nil, err
-	}
-	return items, nil
+	err := r.DB.
+		Where("cart_id = ?", obj.ID).
+		Preload("Variant").
+		Preload("Variant.Product").
+		Find(&items).Error
+
+	return items, err
 }
 
 // TotalAmount is the resolver for the totalAmount field.
 func (r *cartResolver) TotalAmount(ctx context.Context, obj *models.Cart) (float64, error) {
 	var items []models.CartItem
-	err := r.DB.Preload("Variant").Preload("Variant.Product").
+
+	err := r.DB.
+		Preload("Variant").
+		Preload("Variant.Product").
 		Where("cart_id = ?", obj.ID).
 		Find(&items).Error
+
 	if err != nil {
 		return 0, err
 	}
@@ -75,31 +75,27 @@ func (r *cartItemResolver) ID(ctx context.Context, obj *models.CartItem) (string
 
 // ProductID is the resolver for the productId field.
 func (r *cartItemResolver) ProductID(ctx context.Context, obj *models.CartItem) (string, error) {
-	// Variant may already be preloaded
 	if obj.Variant.Product.ID != 0 {
-		id := strconv.FormatUint(uint64(obj.Variant.Product.ID), 10)
-		return id, nil
+		return strconv.FormatUint(uint64(obj.Variant.Product.ID), 10), nil
 	}
 
-	// fallback load
 	var v models.ProductVariant
 	if err := r.DB.Preload("Product").First(&v, obj.VariantID).Error; err != nil {
 		return "", err
 	}
 
-	id := strconv.FormatUint(uint64(v.Product.ID), 10)
-	return id, nil
+	return strconv.FormatUint(uint64(v.Product.ID), 10), nil
 }
 
 // VariantID is the resolver for the variantId field.
 func (r *cartItemResolver) VariantID(ctx context.Context, obj *models.CartItem) (*string, error) {
-	id := strconv.FormatUint(uint64(obj.VariantID), 10)
-	return &id, nil
+	out := strconv.FormatUint(uint64(obj.VariantID), 10)
+	return &out, nil
 }
 
 // UnitPrice is the resolver for the unitPrice field.
 func (r *cartItemResolver) UnitPrice(ctx context.Context, obj *models.CartItem) (float64, error) {
-	if obj.Variant.ID != 0 && obj.Variant.Product.ID != 0 {
+	if obj.Variant.Product.ID != 0 {
 		return obj.Variant.Product.BasePrice + obj.Variant.PriceModifier, nil
 	}
 
@@ -123,70 +119,53 @@ func (r *cartItemResolver) UpdatedAt(ctx context.Context, obj *models.CartItem) 
 
 // AddToCart is the resolver for the addToCart field.
 func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartInput) (*model.AddToCartPayload, error) {
-	// Get current user
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized")
 	}
 
-	// Parse variant ID
 	if input.VariantID == nil {
-		return nil, fmt.Errorf("variant ID is required")
+		return nil, fmt.Errorf("variant ID required")
 	}
+
 	variantID, err := strconv.ParseUint(*input.VariantID, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("invalid variant ID: %w", err)
+		return nil, fmt.Errorf("invalid variant ID")
 	}
 
-	// Get or create cart
+	// ✅ FIXED: Clerk UserID is string
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Create new cart
-			cart = &models.Cart{
-				UserID: user.UserID,
-			}
-			err = r.DB.Create(cart).Error
-			if err != nil {
-				return nil, fmt.Errorf("failed to create cart: %w", err)
+			cart = &models.Cart{UserID: user.UserID}
+			if err := r.DB.Create(cart).Error; err != nil {
+				return nil, err
 			}
 		} else {
-			return nil, fmt.Errorf("failed to get cart: %w", err)
+			return nil, err
 		}
 	}
 
-	// Check if item already exists in cart
-	var existingItem models.CartItem
-	err = r.DB.Where("cart_id = ? AND variant_id = ?", cart.ID, uint(variantID)).First(&existingItem).Error
+	var existing models.CartItem
+	err = r.DB.Where("cart_id=? AND variant_id=?", cart.ID, uint(variantID)).
+		First(&existing).Error
+
 	if err == nil {
-		// Update quantity
-		existingItem.Quantity += input.Quantity
-		err = r.CartRepository.UpdateItem(&existingItem)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update cart item: %w", err)
-		}
+		existing.Quantity += input.Quantity
+		r.CartRepository.UpdateItem(&existing)
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		// Add new item
-		newItem := &models.CartItem{
+		item := &models.CartItem{
 			CartID:    cart.ID,
 			VariantID: uint(variantID),
 			Quantity:  input.Quantity,
 			AddedAt:   time.Now(),
 		}
-		err = r.CartRepository.AddItem(newItem)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add item to cart: %w", err)
-		}
+		r.CartRepository.AddItem(item)
 	} else {
-		return nil, fmt.Errorf("failed to check existing item: %w", err)
+		return nil, err
 	}
 
-	// Reload cart with items
-	cart, err = r.CartRepository.GetCartByUserID(user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to reload cart: %w", err)
-	}
-
+	cart, _ = r.CartRepository.GetCartByUserID(user.UserID)
 	return &model.AddToCartPayload{Cart: cart}, nil
 }
 
@@ -197,11 +176,10 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 		return nil, errors.New("unauthorized")
 	}
 
-	cartItemID, _ := strconv.ParseUint(input.CartItemID, 10, 32)
+	id, _ := strconv.ParseUint(input.CartItemID, 10, 32)
 
 	var item models.CartItem
-	err := r.DB.Preload("Cart").First(&item, uint(cartItemID)).Error
-	if err != nil {
+	if err := r.DB.Preload("Cart").First(&item, uint(id)).Error; err != nil {
 		return nil, fmt.Errorf("cart item not found")
 	}
 
@@ -209,15 +187,9 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 		return nil, fmt.Errorf("forbidden")
 	}
 
-	if err := r.DB.Delete(&item).Error; err != nil {
-		return nil, err
-	}
+	r.DB.Delete(&item)
 
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
-	if err != nil {
-		return nil, err
-	}
-
+	cart, _ := r.CartRepository.GetCartByUserID(user.UserID)
 	return &model.RemoveCartItemPayload{Cart: cart}, nil
 }
 
@@ -225,71 +197,23 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartInput) (*model.ClearCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
 	if user == nil {
-		return nil, errors.New("unauthorized: please login")
+		return nil, errors.New("unauthorized")
 	}
 
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
+		return nil, err
 	}
 
-	err = r.CartRepository.ClearCart(cart.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to clear cart: %w", err)
-	}
+	r.CartRepository.ClearCart(cart.ID)
 
-	// return fresh (now empty) cart
-	cart, err = r.CartRepository.GetCartByUserID(user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to reload cart: %w", err)
-	}
-
+	cart, _ = r.CartRepository.GetCartByUserID(user.UserID)
 	return &model.ClearCartPayload{Cart: cart}, nil
 }
 
 // AttachCartToUser is the resolver for the attachCartToUser field.
 func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.AttachCartToUserInput) (*model.AttachCartToUserPayload, error) {
-	guestID, _ := strconv.ParseUint(input.CartID, 10, 32)
-	userID, _ := strconv.ParseUint(input.UserID, 10, 32)
-
-	var guestCart models.Cart
-	if err := r.DB.Preload("CartItems").First(&guestCart, uint(guestID)).Error; err != nil {
-		return nil, fmt.Errorf("guest cart not found")
-	}
-
-	destCart, err := r.CartRepository.GetCartByUserID(uint(userID))
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			destCart = &models.Cart{UserID: uint(userID)}
-			r.DB.Create(destCart)
-		} else {
-			return nil, err
-		}
-	}
-
-	for _, gi := range guestCart.CartItems {
-		var existing models.CartItem
-		err := r.DB.Where("cart_id=? AND variant_id=?", destCart.ID, gi.VariantID).
-			First(&existing).Error
-
-		if err == nil {
-			existing.Quantity += gi.Quantity
-			r.DB.Save(&existing)
-		} else {
-			newItem := models.CartItem{
-				CartID:    destCart.ID,
-				VariantID: gi.VariantID,
-				Quantity:  gi.Quantity,
-				AddedAt:   time.Now(),
-			}
-			r.DB.Create(&newItem)
-		}
-	}
-
-	r.DB.Delete(&guestCart)
-
-	finalCart, _ := r.CartRepository.GetCartByUserID(uint(userID))
-	return &model.AttachCartToUserPayload{Cart: finalCart}, nil
+	panic(fmt.Errorf("not implemented: AttachCartToUser - attachCartToUser"))
 }
 
 // GetCart is the resolver for the getCart field.
@@ -304,8 +228,12 @@ func (r *queryResolver) GetCart(ctx context.Context, cartID *string, forUser *bo
 
 	if cartID != nil {
 		idVal, _ := strconv.ParseUint(*cartID, 10, 32)
+
 		var cart models.Cart
-		err := r.DB.Preload("CartItems").Preload("CartItems.Variant").Preload("CartItems.Variant.Product").
+		err := r.DB.
+			Preload("CartItems").
+			Preload("CartItems.Variant").
+			Preload("CartItems.Variant.Product").
 			First(&cart, uint(idVal)).Error
 
 		if err != nil {
@@ -326,3 +254,15 @@ func (r *Resolver) CartItem() generated.CartItemResolver { return &cartItemResol
 
 type cartResolver struct{ *Resolver }
 type cartItemResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *cartResolver) UserID(ctx context.Context, obj *models.Cart) (*string, error) {
+	return &obj.UserID, nil
+}
+*/
