@@ -2,7 +2,7 @@ name: Deploy to Render (Docker)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -16,5 +16,5 @@ jobs:
       - name: Trigger Render Deployment
         uses: render-oss/action-trigger-deploy@v1
         with:
-          service-id: srv-d4uj2dmr433s73dl4mf0
-          api-key: rnd_FBrAk5iS71wygmk931guEsdhBmnz
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
