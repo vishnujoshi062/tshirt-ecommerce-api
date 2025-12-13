@@ -92,8 +92,8 @@ func main() {
 	router.Use(middleware.AuthMiddleware)
 
 	// Routes
-	router.Handle("/", playground.Handler("GraphQL Playground", "/graphql"))
-	router.Handle("/graphql", srv)
+	router.Handle("/", playground.Handler("GraphQL Playground", "/query"))
+	router.Handle("/query", srv)
 
 	// OAuth routes
 	router.Get("/auth/google", handleGoogleLogin)

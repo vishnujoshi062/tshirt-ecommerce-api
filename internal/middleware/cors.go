@@ -8,9 +8,9 @@ func CorsMiddleware() *cors.Cors {
 			"http://localhost:3000",
 			"http://localhost:3001",
 			"http://127.0.0.1:3000",
+			"http://127.0.0.1:3001",
 			"https://ecommerce-frontend-five-nu.vercel.app",
-			// Add wildcard for development if needed (be careful in production)
-			// "http://localhost:*",
+			"*", // Allow all origins for development
 		},
 		AllowedMethods: []string{
 			"GET",
@@ -31,7 +31,7 @@ func CorsMiddleware() *cors.Cors {
 		ExposedHeaders: []string{
 			"Link",
 		},
-		AllowCredentials: true,
+		AllowCredentials: false,
 		MaxAge:           300,
 	})
 }
