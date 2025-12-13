@@ -1,0 +1,20 @@
+name: Deploy to Render (Docker)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Trigger Render Deployment
+        uses: render-oss/action-trigger-deploy@v1
+        with:
+          service-id: srv-d4uj2dmr433s73dl4mf0
+          api-key: rnd_FBrAk5iS71wygmk931guEsdhBmnz
