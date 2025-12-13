@@ -11,7 +11,7 @@ func CorsMiddleware() *cors.Cors {
 	return cors.New(cors.Options{
 		AllowOriginFunc: func(r *http.Request, origin string) bool {
 			// Always allow production frontend
-			if origin == "https://ecommerce-frontend-five-nu.vercel.app" {
+			if origin == "https://ecommerce-frontend-bigshow.vercel.app/" {
 				return true
 			}
 
