@@ -4,9 +4,9 @@ schema {
 }
 
 type Query {
-  ping: String
+  ping: String!
 }
 
 type Mutation {
-  ping: String
+  ping: String!
 }

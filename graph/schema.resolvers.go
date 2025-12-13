@@ -12,12 +12,12 @@ import (
 )
 
 // Ping is the resolver for the ping field.
-func (r *mutationResolver) Ping(ctx context.Context) (*string, error) {
+func (r *mutationResolver) Ping(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Ping - ping"))
 }
 
 // Ping is the resolver for the ping field.
-func (r *queryResolver) Ping(ctx context.Context) (*string, error) {
+func (r *queryResolver) Ping(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Ping - ping"))
 }
 

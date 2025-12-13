@@ -251,7 +251,7 @@ type InventoryResolver interface {
 	AvailableQuantity(ctx context.Context, obj *models.Inventory) (int, error)
 }
 type MutationResolver interface {
-	Ping(ctx context.Context) (*string, error)
+	Ping(ctx context.Context) (string, error)
 	AddToCart(ctx context.Context, input model.AddToCartInput) (*model.AddToCartPayload, error)
 	RemoveCartItem(ctx context.Context, input model.RemoveCartItemInput) (*model.RemoveCartItemPayload, error)
 	ClearCart(ctx context.Context, input model.ClearCartInput) (*model.ClearCartPayload, error)
@@ -298,7 +298,7 @@ type ProductVariantResolver interface {
 	Price(ctx context.Context, obj *models.ProductVariant) (float64, error)
 }
 type QueryResolver interface {
-	Ping(ctx context.Context) (*string, error)
+	Ping(ctx context.Context) (string, error)
 	GetCart(ctx context.Context, cartID *string, forUser *bool) (*models.Cart, error)
 	MyOrders(ctx context.Context) ([]*models.Order, error)
 	Order(ctx context.Context, id string) (*models.Order, error)
@@ -1506,11 +1506,11 @@ type ProductOptions {
 }
 
 type Query {
-  ping: String
+  ping: String!
 }
 
 type Mutation {
-  ping: String
+  ping: String!
 }
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `type User {
@@ -2642,9 +2642,9 @@ func (ec *executionContext) _Mutation_ping(ctx context.Context, field graphql.Co
 			return ec.resolvers.Mutation().Ping(ctx)
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -5192,9 +5192,9 @@ func (ec *executionContext) _Query_ping(ctx context.Context, field graphql.Colle
 			return ec.resolvers.Query().Ping(ctx)
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -9021,6 +9021,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_ping(ctx, field)
 			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "addToCart":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_addToCart(ctx, field)
@@ -10034,13 +10037,16 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "ping":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_ping(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
