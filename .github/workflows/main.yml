@@ -17,4 +17,4 @@ jobs:
         uses: render-oss/action-trigger-deploy@v1
         with:
           service-id: ${{ secrets.RENDER_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
+          api-key: ${{ secrets.RENDER_APIKEY }}
