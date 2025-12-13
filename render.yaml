@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: tshirt-ecommerce-api
+    env: docker
+    region: oregon
+    plan: free
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+
+    envVars:
+      - key: PORT
+        value: 8081
+        
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        sync: false
