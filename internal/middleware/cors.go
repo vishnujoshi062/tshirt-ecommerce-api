@@ -1,16 +1,27 @@
 package middleware
 
-import "github.com/go-chi/cors"
+import (
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/cors"
+)
 
 func CorsMiddleware() *cors.Cors {
 	return cors.New(cors.Options{
-		AllowedOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:3001",
-			"http://127.0.0.1:3000",
-			"http://127.0.0.1:3001",
-			"https://ecommerce-frontend-five-nu.vercel.app",
-			"*", // Allow all origins for development
+		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			// Always allow production frontend
+			if origin == "https://ecommerce-frontend-five-nu.vercel.app" {
+				return true
+			}
+
+			// Allow localhost in development/testing
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") {
+				return true
+			}
+
+			return false
 		},
 		AllowedMethods: []string{
 			"GET",
@@ -31,7 +42,7 @@ func CorsMiddleware() *cors.Cors {
 		ExposedHeaders: []string{
 			"Link",
 		},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	})
 }
