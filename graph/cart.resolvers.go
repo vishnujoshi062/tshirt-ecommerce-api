@@ -137,7 +137,8 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			cart = &models.Cart{UserID: user.UserID}
+			userIDPtr := &user.UserID
+			cart = &models.Cart{UserID: userIDPtr}
 			if err := r.DB.Create(cart).Error; err != nil {
 				return nil, err
 			}
@@ -183,7 +184,7 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 		return nil, fmt.Errorf("cart item not found")
 	}
 
-	if item.Cart.UserID != user.UserID {
+	if item.Cart.UserID == nil || *item.Cart.UserID != user.UserID {
 		return nil, fmt.Errorf("forbidden")
 	}
 
