@@ -20,6 +20,6 @@ type User struct {
 	UpdatedAt     time.Time
 	DeletedAt     gorm.DeletedAt `gorm:"index"`
 
-	Carts  []Cart  `gorm:"foreignKey:UserID"`
-	Orders []Order `gorm:"foreignKey:UserID"`
+	// Note: Cart.UserID and Order.UserID store Clerk IDs (strings), not database user IDs
+	// Therefore, we cannot use foreign key relationships here
 }

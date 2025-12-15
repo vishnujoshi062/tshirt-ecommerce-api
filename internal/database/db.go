@@ -37,6 +37,22 @@ func Connect() {
 }
 
 func Migrate() {
+	// Drop existing foreign key constraints that are no longer valid
+	// Cart.UserID and Order.UserID store Clerk IDs (strings), not database user IDs (integers)
+	// So they cannot have foreign key relationships with User.ID
+	// Try to drop common constraint names (IF EXISTS prevents errors if they don't exist)
+	dropStatements := []string{
+		"ALTER TABLE IF EXISTS carts DROP CONSTRAINT IF EXISTS fk_users_carts",
+		"ALTER TABLE IF EXISTS carts DROP CONSTRAINT IF EXISTS users_carts_user_id_fkey",
+		"ALTER TABLE IF EXISTS orders DROP CONSTRAINT IF EXISTS fk_users_orders",
+		"ALTER TABLE IF EXISTS orders DROP CONSTRAINT IF EXISTS users_orders_user_id_fkey",
+	}
+
+	for _, stmt := range dropStatements {
+		// IF EXISTS prevents errors if constraints don't exist, so we ignore errors here
+		_ = DB.Exec(stmt).Error
+	}
+
 	err := DB.AutoMigrate(
 		&models.User{},
 		&models.Product{},
