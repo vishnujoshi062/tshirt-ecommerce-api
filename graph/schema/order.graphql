@@ -3,6 +3,8 @@ type Order {
   userID: ID!
   items: [OrderItem!]!
   totalAmount: Float!
+  discount: Float!
+  promoCode: String
   status: String!
   shippingAddress: String!
   payment: Payment
@@ -31,6 +33,7 @@ type Payment {
 
 input CreateOrderInput {
   shippingAddress: String!
+  promoCode: String
 }
 
 extend type Query {

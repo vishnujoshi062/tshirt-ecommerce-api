@@ -18,4 +18,6 @@ type Resolver struct {
 	OrderRepository   *repository.OrderRepository
 	PaymentRepository *repository.PaymentRepository
 	PaymentService    *service.PaymentService
+	PromoCodeRepo    *repository.PromoCodeRepository    // Add
+	PromoCodeService *service.PromoCodeService 
 }

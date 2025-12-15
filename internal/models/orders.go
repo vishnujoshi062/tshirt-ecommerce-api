@@ -5,11 +5,13 @@ import (
 )
 
 type Order struct {
-	ID              uint    `gorm:"primaryKey"`
-	UserID          string    `gorm:"not null"`
-	TotalAmount     float64 `gorm:"not null"`
-	Status          string  `gorm:"not null"`
-	ShippingAddress string  `gorm:"not null"`
+	ID              uint     `gorm:"primaryKey"`
+	UserID          string   `gorm:"not null"`
+	TotalAmount     float64  `gorm:"not null"`
+	Discount        float64  `gorm:"default:0"`
+	PromoCode       *string  `gorm:"type:varchar(50)"`
+	Status          string   `gorm:"not null"`
+	ShippingAddress string   `gorm:"not null"`
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 

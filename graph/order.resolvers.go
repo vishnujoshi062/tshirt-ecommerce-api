@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
@@ -24,75 +25,134 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 		return nil, errors.New("unauthorized")
 	}
 
-	// ✅ Clerk-safe: user.UserID is STRING
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
-	}
+	var order *models.Order
+	var finalTotal float64
 
-	var cartItems []models.CartItem
-	err = r.DB.
-		Where("cart_id = ?", cart.ID).
-		Preload("Variant").
-		Preload("Variant.Product").
-		Find(&cartItems).Error
+	// Start transaction
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		// Get cart and items
+		cart, err := r.CartRepository.GetCartByUserID(user.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to get cart: %w", err)
+		}
+
+		var cartItems []models.CartItem
+		err = tx.
+			Where("cart_id = ?", cart.ID).
+			Preload("Variant").
+			Preload("Variant.Product").
+			Find(&cartItems).Error
+
+		if err != nil {
+			return err
+		}
+
+		if len(cartItems) == 0 {
+			return errors.New("cart is empty")
+		}
+
+		var subtotal float64
+		orderItems := []models.OrderItem{}
+
+		for _, item := range cartItems {
+			price := item.Variant.Product.BasePrice + item.Variant.PriceModifier
+			sub := price * float64(item.Quantity)
+			subtotal += sub
+
+			var inventory models.Inventory
+			if err := tx.Where("variant_id = ?", item.VariantID).First(&inventory).Error; err != nil {
+				return err
+			}
+
+			if inventory.StockQuantity < item.Quantity {
+				return fmt.Errorf("out of stock for variant %d", item.VariantID)
+			}
+
+			orderItems = append(orderItems, models.OrderItem{
+				VariantID: item.VariantID,
+				Quantity:  item.Quantity,
+				UnitPrice: price,
+				Subtotal:  sub,
+			})
+		}
+
+		// Apply promo code if provided
+		discount := 0.0
+		if input.PromoCode != nil && *input.PromoCode != "" {
+			// Re-validate promo
+			validation, err := r.PromoCodeService.ValidatePromoCode(*input.PromoCode, subtotal)
+			if err != nil {
+				return err
+			}
+
+			if !validation.IsValid {
+				return errors.New(validation.Message)
+			}
+
+			discount = validation.DiscountAmount
+
+			// Atomically increment usage
+			promo, err := r.PromoCodeRepo.FindByCode(*input.PromoCode)
+			if err != nil {
+				return err
+			}
+
+			if promo.UsageLimit != nil {
+				affected, err := r.PromoCodeRepo.IncrementUsageWithLimit(tx, *input.PromoCode, *promo.UsageLimit)
+				if err != nil {
+					return err
+				}
+				if affected == 0 {
+					return errors.New("promo code usage limit reached")
+				}
+			} else {
+				if err := tx.Model(&models.PromoCode{}).
+					Where("code = ?", strings.ToUpper(*input.PromoCode)).
+					Update("usage_count", gorm.Expr("usage_count + ?", 1)).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		finalTotal = subtotal - discount
+
+		// Create order
+		order = &models.Order{
+			UserID:          user.UserID,
+			TotalAmount:     finalTotal,
+			Discount:        discount,
+			PromoCode:       input.PromoCode,
+			Status:          "pending",
+			ShippingAddress: input.ShippingAddress,
+			OrderItems:      orderItems,
+		}
+
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+
+		// Reduce inventory
+		for _, item := range cartItems {
+			if err := tx.Model(&models.Inventory{}).
+				Where("variant_id = ?", item.VariantID).
+				Update("stock_quantity", gorm.Expr("stock_quantity - ?", item.Quantity)).Error; err != nil {
+				return err
+			}
+		}
+
+		// Clear cart
+		if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(cartItems) == 0 {
-		return nil, errors.New("cart is empty")
-	}
-
-	var total float64
-	orderItems := []models.OrderItem{}
-
-	for _, item := range cartItems {
-		price := item.Variant.Product.BasePrice + item.Variant.PriceModifier
-		sub := price * float64(item.Quantity)
-		total += sub
-
-		var inventory models.Inventory
-		if err := r.DB.Where("variant_id = ?", item.VariantID).First(&inventory).Error; err != nil {
-			return nil, err
-		}
-
-		if inventory.StockQuantity < item.Quantity {
-			return nil, fmt.Errorf("out of stock for variant %d", item.VariantID)
-		}
-
-		orderItems = append(orderItems, models.OrderItem{
-			VariantID: item.VariantID,
-			Quantity:  item.Quantity,
-			UnitPrice: price,
-			Subtotal:  sub,
-		})
-	}
-
-	order := models.Order{
-		UserID:          user.UserID, // ✅ STRING
-		TotalAmount:     total,
-		Status:          "pending",
-		ShippingAddress: input.ShippingAddress,
-		OrderItems:      orderItems,
-	}
-
-	if err := r.OrderRepository.CreateOrder(&order); err != nil {
-		return nil, err
-	}
-
-	// Reduce inventory
-	for _, item := range cartItems {
-		r.DB.Model(&models.Inventory{}).
-			Where("variant_id = ?", item.VariantID).
-			Update("stock_quantity", gorm.Expr("stock_quantity - ?", item.Quantity))
-	}
-
-	// Clear cart
-	r.CartRepository.ClearCart(cart.ID)
-
-	return &order, nil
+	return order, nil
 }
 
 // UpdateOrderStatus is the resolver for the updateOrderStatus field.

@@ -27,3 +27,12 @@ models:
   Inventory:
     model:
       - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models.Inventory
+  PromoCode:
+    model:
+      - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models.PromoCode
+  Order:
+    model:
+      - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models.Order
+  DiscountType:
+    model:
+      - github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models.DiscountType

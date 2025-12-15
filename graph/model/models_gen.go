@@ -40,7 +40,8 @@ type ClearCartPayload struct {
 }
 
 type CreateOrderInput struct {
-	ShippingAddress string `json:"shippingAddress"`
+	ShippingAddress string  `json:"shippingAddress"`
+	PromoCode       *string `json:"promoCode,omitempty"`
 }
 
 type LoginInput struct {
@@ -83,6 +84,22 @@ type ProductVariantInput struct {
 	PriceModifier float64 `json:"priceModifier"`
 	Sku           string  `json:"sku"`
 	StockQuantity int     `json:"stockQuantity"`
+}
+
+type PromoCodeInput struct {
+	Code          string              `json:"code"`
+	DiscountType  models.DiscountType `json:"discountType"`
+	DiscountValue float64             `json:"discountValue"`
+	ValidFrom     *string             `json:"validFrom,omitempty"`
+	ValidUntil    string              `json:"validUntil"`
+	IsActive      *bool               `json:"isActive,omitempty"`
+	UsageLimit    *int                `json:"usageLimit,omitempty"`
+}
+
+type PromoCodeValidation struct {
+	IsValid        bool    `json:"isValid"`
+	DiscountAmount float64 `json:"discountAmount"`
+	Message        *string `json:"message,omitempty"`
 }
 
 type Query struct {

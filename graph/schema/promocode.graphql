@@ -1,0 +1,47 @@
+enum DiscountType {
+  percentage
+  fixed
+}
+
+type PromoCode {
+  id: ID!
+  code: String!
+  discountType: DiscountType!
+  discountValue: Float!
+  validFrom: String
+  validUntil: String!
+  isActive: Boolean!
+  usageLimit: Int
+  usageCount: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input PromoCodeInput {
+  code: String!
+  discountType: DiscountType!
+  discountValue: Float!
+  validFrom: String
+  validUntil: String!
+  isActive: Boolean
+  usageLimit: Int
+}
+
+type PromoCodeValidation {
+  isValid: Boolean!
+  discountAmount: Float!
+  message: String
+}
+
+extend type Query {
+  promoCodes(isActive: Boolean): [PromoCode!]!
+  promoCode(code: String!): PromoCode
+  validatePromoCode(code: String!, orderAmount: Float!): PromoCodeValidation!
+}
+
+extend type Mutation {
+  createPromoCode(input: PromoCodeInput!): PromoCode!
+  updatePromoCode(id: ID!, input: PromoCodeInput!): PromoCode!
+  deletePromoCode(id: ID!): Boolean!
+  togglePromoCodeStatus(id: ID!): PromoCode!
+}

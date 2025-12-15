@@ -28,7 +28,6 @@ func main() {
 		"../../.env",
 		filepath.Join(os.Getenv("PWD"), ".env"),
 	}
-
 	envLoaded := false
 	for _, path := range possiblePaths {
 		if _, err := os.Stat(path); err == nil {
@@ -41,7 +40,6 @@ func main() {
 			}
 		}
 	}
-
 	if !envLoaded {
 		// Load environment variables from default location
 		config.LoadEnv()
@@ -64,9 +62,11 @@ func main() {
 	cartRepo := repository.NewCartRepository(database.DB)
 	orderRepo := repository.NewOrderRepository(database.DB)
 	paymentRepo := repository.NewPaymentRepository(database.DB)
+	promoCodeRepo := repository.NewPromoCodeRepository(database.DB)
 
 	// Initialize services
 	paymentService := service.NewPaymentService()
+	promoCodeService := service.NewPromoCodeService(promoCodeRepo)
 
 	// Initialize resolver
 	resolver := &graph.Resolver{
@@ -77,6 +77,8 @@ func main() {
 		OrderRepository:   orderRepo,
 		PaymentRepository: paymentRepo,
 		PaymentService:    paymentService,
+		PromoCodeRepo:     promoCodeRepo,
+		PromoCodeService:  promoCodeService,
 	}
 
 	// Create GraphQL server
@@ -87,7 +89,7 @@ func main() {
 	// Setup router
 	router := chi.NewRouter()
 
-	// Middleware
+	// Middleware - CORS must be first
 	router.Use(middleware.CorsMiddleware().Handler)
 	router.Use(middleware.AuthMiddleware)
 
@@ -99,8 +101,9 @@ func main() {
 	router.Get("/auth/google", handleGoogleLogin)
 	router.Get("/auth/google/callback", handleGoogleCallback)
 
-	port := config.GetEnv("PORT", "8081")
+	port := config.GetEnv("PORT", "8080")
 	log.Printf("Server starting on http://localhost:%s", port)
+	log.Printf("GraphQL endpoint: http://localhost:%s/query", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
