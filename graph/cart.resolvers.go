@@ -214,7 +214,55 @@ func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartI
 
 // AttachCartToUser is the resolver for the attachCartToUser field.
 func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.AttachCartToUserInput) (*model.AttachCartToUserPayload, error) {
-	panic(fmt.Errorf("not implemented: AttachCartToUser - attachCartToUser"))
+	user := middleware.GetUserFromContext(ctx)
+	if user == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	// Verify that the userId in the input matches the authenticated user
+	if input.UserID != user.UserID {
+		return nil, fmt.Errorf("forbidden: can only attach cart to your own account")
+	}
+
+	// Parse cartId
+	cartID, err := strconv.ParseUint(input.CartID, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cart ID")
+	}
+
+	// Find the cart
+	var cart models.Cart
+	if err := r.DB.Preload("CartItems").
+		Preload("CartItems.Variant").
+		Preload("CartItems.Variant.Product").
+		First(&cart, uint(cartID)).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("cart not found")
+		}
+		return nil, err
+	}
+
+	// Check if cart is already attached to a different user
+	if cart.UserID != nil && *cart.UserID != user.UserID {
+		return nil, fmt.Errorf("forbidden: cart belongs to another user")
+	}
+
+	// Attach cart to user
+	userIDPtr := &user.UserID
+	cart.UserID = userIDPtr
+	if err := r.DB.Save(&cart).Error; err != nil {
+		return nil, fmt.Errorf("failed to attach cart to user: %w", err)
+	}
+
+	// Reload cart with all relationships
+	if err := r.DB.Preload("CartItems").
+		Preload("CartItems.Variant").
+		Preload("CartItems.Variant.Product").
+		First(&cart, cart.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &model.AttachCartToUserPayload{Cart: &cart}, nil
 }
 
 // GetCart is the resolver for the getCart field.
