@@ -37,9 +37,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// ✅ Validate Clerk token
 		claims, err := auth.ValidateClerkToken(authHeader)
 		if err != nil {
-			// TODO: In production, return 401 error
-			// For testing, allow requests without valid token
-			next.ServeHTTP(w, r)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"error":"Unauthorized (invalid Clerk token)"}`))
 			return
 		}
 

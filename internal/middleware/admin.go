@@ -14,6 +14,7 @@ func RequireAdmin(ctx context.Context) error {
 	// TODO: Check if user has admin role from Clerk metadata
 	// For now, allow all authenticated users
 	// In production, check user.PublicMetadata or custom claims for admin role
+	// This can be done by checking Clerk's custom claims or metadata
 	
 	return nil
 }
