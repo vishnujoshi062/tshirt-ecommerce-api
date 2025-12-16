@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
@@ -145,22 +144,26 @@ func (r *mutationResolver) TogglePromoCodeStatus(ctx context.Context, id string)
 
 // ValidFrom is the resolver for the validFrom field.
 func (r *promoCodeResolver) ValidFrom(ctx context.Context, obj *models.PromoCode) (*string, error) {
-	panic(fmt.Errorf("not implemented: ValidFrom - validFrom"))
+	if obj.ValidFrom == nil {
+		return nil, nil
+	}
+	validFrom := obj.ValidFrom.Format(time.RFC3339)
+	return &validFrom, nil
 }
 
 // ValidUntil is the resolver for the validUntil field.
 func (r *promoCodeResolver) ValidUntil(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
+	return obj.ValidUntil.Format(time.RFC3339), nil
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *promoCodeResolver) CreatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+	return obj.CreatedAt.Format(time.RFC3339), nil
 }
 
 // UpdatedAt is the resolver for the updatedAt field.
 func (r *promoCodeResolver) UpdatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
+	return obj.UpdatedAt.Format(time.RFC3339), nil
 }
 
 // PromoCodes resolver
