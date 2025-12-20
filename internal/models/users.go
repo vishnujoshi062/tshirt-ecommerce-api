@@ -8,13 +8,15 @@ import (
 
 type User struct {
 	ID            uint   `gorm:"primaryKey"`
+	ClerkUserID   string `gorm:"uniqueIndex;not null"` // Clerk user ID
 	Email         string `gorm:"uniqueIndex;not null"`
-	PasswordHash  string `gorm:"not null"`
-	Name          string `gorm:"not null"`
+	PasswordHash  string
+	Name          string
 	Phone         string
+	PhoneVerified bool   `gorm:"default:false"`
 	Address       string
-	Role          string `gorm:"default:'user'"`  // user, admin
-	OAuthProvider string `gorm:"default:'local'"` // local, google
+	Role          string `gorm:"default:'user'"` // user, admin
+	OAuthProvider string `gorm:"default:'clerk'"`
 	OAuthID       string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
