@@ -129,6 +129,10 @@ type RemoveCartItemPayload struct {
 	Cart *models.Cart `json:"cart"`
 }
 
+type UpdatePhoneInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
 type VerifyPaymentInput struct {
 	OrderID           string `json:"orderID"`
 	RazorpayOrderID   string `json:"razorpayOrderID"`

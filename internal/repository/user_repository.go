@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
 )
@@ -59,4 +61,25 @@ func (r *UserRepository) GetUserByClerkID(clerkUserID string) (*models.User, err
 	var user models.User
 	err := r.DB.Where("clerk_user_id = ?", clerkUserID).First(&user).Error
 	return &user, err
+}
+
+// UpdatePhoneNumber updates the user's phone number
+func (r *UserRepository) UpdatePhoneNumber(clerkUserID, phoneNumber string) (*models.User, error) {
+	user := &models.User{}
+	
+	// Update phone number and mark as verified
+	result := r.DB.Where("clerk_user_id = ?", clerkUserID).
+		Model(user).
+		Updates(map[string]interface{}{
+			"phone":            phoneNumber,
+			"phone_verified":   phoneNumber != "",
+			"phone_updated_at": time.Now(),
+		}).
+		First(user)
+	
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	
+	return user, nil
 }

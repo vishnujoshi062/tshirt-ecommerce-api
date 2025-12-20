@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 )
@@ -18,6 +19,11 @@ import (
 // UpdateProfile is the resolver for the updateProfile field.
 func (r *mutationResolver) UpdateProfile(ctx context.Context, name *string, phone *string, address *string) (*models.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateProfile - updateProfile"))
+}
+
+// UpdatePhoneNumber is the resolver for the updatePhoneNumber field.
+func (r *mutationResolver) UpdatePhoneNumber(ctx context.Context, input model.UpdatePhoneInput) (*models.User, error) {
+	panic(fmt.Errorf("not implemented: UpdatePhoneNumber - updatePhoneNumber"))
 }
 
 // Me is the resolver for the me field.
@@ -47,9 +53,19 @@ func (r *userResolver) ID(ctx context.Context, obj *models.User) (string, error)
 	return strconv.FormatUint(uint64(obj.ID), 10), nil
 }
 
+// PhoneUpdatedAt is the resolver for the phoneUpdatedAt field.
+func (r *userResolver) PhoneUpdatedAt(ctx context.Context, obj *models.User) (*string, error) {
+	panic(fmt.Errorf("not implemented: PhoneUpdatedAt - phoneUpdatedAt"))
+}
+
 // CreatedAt is the resolver for the createdAt field.
 func (r *userResolver) CreatedAt(ctx context.Context, obj *models.User) (string, error) {
 	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+}
+
+// UpdatedAt is the resolver for the updatedAt field.
+func (r *userResolver) UpdatedAt(ctx context.Context, obj *models.User) (string, error) {
+	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
 }
 
 // User returns generated.UserResolver implementation.

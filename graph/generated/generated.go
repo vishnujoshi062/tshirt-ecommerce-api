@@ -118,6 +118,7 @@ type ComplexityRoot struct {
 		TogglePromoCodeStatus func(childComplexity int, id string) int
 		UpdateInventory       func(childComplexity int, variantID string, quantity int) int
 		UpdateOrderStatus     func(childComplexity int, orderID string, status string) int
+		UpdatePhoneNumber     func(childComplexity int, input model.UpdatePhoneInput) int
 		UpdateProduct         func(childComplexity int, id string, input model.ProductInput) int
 		UpdateProfile         func(childComplexity int, name *string, phone *string, address *string) int
 		UpdatePromoCode       func(childComplexity int, id string, input model.PromoCodeInput) int
@@ -247,13 +248,17 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Address   func(childComplexity int) int
-		CreatedAt func(childComplexity int) int
-		Email     func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Name      func(childComplexity int) int
-		Phone     func(childComplexity int) int
-		Role      func(childComplexity int) int
+		Address        func(childComplexity int) int
+		ClerkUserID    func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Email          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Name           func(childComplexity int) int
+		Phone          func(childComplexity int) int
+		PhoneUpdatedAt func(childComplexity int) int
+		PhoneVerified  func(childComplexity int) int
+		Role           func(childComplexity int) int
+		UpdatedAt      func(childComplexity int) int
 	}
 }
 
@@ -301,6 +306,7 @@ type MutationResolver interface {
 	DeletePromoCode(ctx context.Context, id string) (bool, error)
 	TogglePromoCodeStatus(ctx context.Context, id string) (*models.PromoCode, error)
 	UpdateProfile(ctx context.Context, name *string, phone *string, address *string) (*models.User, error)
+	UpdatePhoneNumber(ctx context.Context, input model.UpdatePhoneInput) (*models.User, error)
 }
 type OrderResolver interface {
 	ID(ctx context.Context, obj *models.Order) (string, error)
@@ -357,7 +363,10 @@ type QueryResolver interface {
 type UserResolver interface {
 	ID(ctx context.Context, obj *models.User) (string, error)
 
+	PhoneUpdatedAt(ctx context.Context, obj *models.User) (*string, error)
+
 	CreatedAt(ctx context.Context, obj *models.User) (string, error)
+	UpdatedAt(ctx context.Context, obj *models.User) (string, error)
 }
 
 type executableSchema struct {
@@ -695,6 +704,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateOrderStatus(childComplexity, args["orderID"].(string), args["status"].(string)), true
+	case "Mutation.updatePhoneNumber":
+		if e.complexity.Mutation.UpdatePhoneNumber == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updatePhoneNumber_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdatePhoneNumber(childComplexity, args["input"].(model.UpdatePhoneInput)), true
 	case "Mutation.updateProduct":
 		if e.complexity.Mutation.UpdateProduct == nil {
 			break
@@ -1341,6 +1361,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Address(childComplexity), true
+	case "User.clerkUserId":
+		if e.complexity.User.ClerkUserID == nil {
+			break
+		}
+
+		return e.complexity.User.ClerkUserID(childComplexity), true
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
 			break
@@ -1371,12 +1397,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Phone(childComplexity), true
+	case "User.phoneUpdatedAt":
+		if e.complexity.User.PhoneUpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.User.PhoneUpdatedAt(childComplexity), true
+	case "User.phoneVerified":
+		if e.complexity.User.PhoneVerified == nil {
+			break
+		}
+
+		return e.complexity.User.PhoneVerified(childComplexity), true
 	case "User.role":
 		if e.complexity.User.Role == nil {
 			break
 		}
 
 		return e.complexity.User.Role(childComplexity), true
+	case "User.updatedAt":
+		if e.complexity.User.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.User.UpdatedAt(childComplexity), true
 
 	}
 	return 0, false
@@ -1396,6 +1440,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPromoCodeInput,
 		ec.unmarshalInputRegisterInput,
 		ec.unmarshalInputRemoveCartItemInput,
+		ec.unmarshalInputUpdatePhoneInput,
 		ec.unmarshalInputVerifyPaymentInput,
 	)
 	first := true
@@ -1536,7 +1581,7 @@ input ClearCartInput {
 input AttachCartToUserInput {
   cartId: ID!
   userId: ID!
-}
+} 
 
 type AddToCartPayload {
   cart: Cart!
@@ -1786,12 +1831,16 @@ type Mutation {
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `type User {
   id: ID!
+  clerkUserId: String!
   email: String!
   name: String!
   phone: String
+  phoneVerified: Boolean!
+  phoneUpdatedAt: String
   address: String
   role: String!
   createdAt: String!
+  updatedAt: String!
 }
 
 input RegisterInput {
@@ -1807,6 +1856,10 @@ input LoginInput {
   password: String!
 }
 
+input UpdatePhoneInput {
+  phoneNumber: String!
+}
+
 type AuthPayload {
   token: String!
   user: User!
@@ -1819,6 +1872,7 @@ extend type Query {
 
 extend type Mutation {
   updateProfile(name: String, phone: String, address: String): User!
+  updatePhoneNumber(input: UpdatePhoneInput!): User!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1999,6 +2053,17 @@ func (ec *executionContext) field_Mutation_updateOrderStatus_args(ctx context.Co
 		return nil, err
 	}
 	args["status"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updatePhoneNumber_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdatePhoneInput2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋgraphᚋmodelᚐUpdatePhoneInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2390,18 +2455,26 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "clerkUserId":
+				return ec.fieldContext_User_clerkUserId(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "phone":
 				return ec.fieldContext_User_phone(ctx, field)
+			case "phoneVerified":
+				return ec.fieldContext_User_phoneVerified(ctx, field)
+			case "phoneUpdatedAt":
+				return ec.fieldContext_User_phoneUpdatedAt(ctx, field)
 			case "address":
 				return ec.fieldContext_User_address(ctx, field)
 			case "role":
 				return ec.fieldContext_User_role(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4074,18 +4147,26 @@ func (ec *executionContext) fieldContext_Mutation_updateProfile(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "clerkUserId":
+				return ec.fieldContext_User_clerkUserId(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "phone":
 				return ec.fieldContext_User_phone(ctx, field)
+			case "phoneVerified":
+				return ec.fieldContext_User_phoneVerified(ctx, field)
+			case "phoneUpdatedAt":
+				return ec.fieldContext_User_phoneUpdatedAt(ctx, field)
 			case "address":
 				return ec.fieldContext_User_address(ctx, field)
 			case "role":
 				return ec.fieldContext_User_role(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4098,6 +4179,71 @@ func (ec *executionContext) fieldContext_Mutation_updateProfile(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updatePhoneNumber(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updatePhoneNumber,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdatePhoneNumber(ctx, fc.Args["input"].(model.UpdatePhoneInput))
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updatePhoneNumber(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "clerkUserId":
+				return ec.fieldContext_User_clerkUserId(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "phone":
+				return ec.fieldContext_User_phone(ctx, field)
+			case "phoneVerified":
+				return ec.fieldContext_User_phoneVerified(ctx, field)
+			case "phoneUpdatedAt":
+				return ec.fieldContext_User_phoneUpdatedAt(ctx, field)
+			case "address":
+				return ec.fieldContext_User_address(ctx, field)
+			case "role":
+				return ec.fieldContext_User_role(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updatePhoneNumber_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6998,18 +7144,26 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "clerkUserId":
+				return ec.fieldContext_User_clerkUserId(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "phone":
 				return ec.fieldContext_User_phone(ctx, field)
+			case "phoneVerified":
+				return ec.fieldContext_User_phoneVerified(ctx, field)
+			case "phoneUpdatedAt":
+				return ec.fieldContext_User_phoneUpdatedAt(ctx, field)
 			case "address":
 				return ec.fieldContext_User_address(ctx, field)
 			case "role":
 				return ec.fieldContext_User_role(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -7044,18 +7198,26 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "clerkUserId":
+				return ec.fieldContext_User_clerkUserId(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "phone":
 				return ec.fieldContext_User_phone(ctx, field)
+			case "phoneVerified":
+				return ec.fieldContext_User_phoneVerified(ctx, field)
+			case "phoneUpdatedAt":
+				return ec.fieldContext_User_phoneUpdatedAt(ctx, field)
 			case "address":
 				return ec.fieldContext_User_address(ctx, field)
 			case "role":
 				return ec.fieldContext_User_role(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -7370,6 +7532,35 @@ func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphq
 	return fc, nil
 }
 
+func (ec *executionContext) _User_clerkUserId(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_clerkUserId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClerkUserID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_clerkUserId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7457,6 +7648,64 @@ func (ec *executionContext) fieldContext_User_phone(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _User_phoneVerified(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_phoneVerified,
+		func(ctx context.Context) (any, error) {
+			return obj.PhoneVerified, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_phoneVerified(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_phoneUpdatedAt(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_phoneUpdatedAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.User().PhoneUpdatedAt(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_phoneUpdatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_address(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7532,6 +7781,35 @@ func (ec *executionContext) _User_createdAt(ctx context.Context, field graphql.C
 }
 
 func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_updatedAt(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.User().UpdatedAt(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -9498,6 +9776,33 @@ func (ec *executionContext) unmarshalInputRemoveCartItemInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdatePhoneInput(ctx context.Context, obj any) (model.UpdatePhoneInput, error) {
+	var it model.UpdatePhoneInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"phoneNumber"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "phoneNumber":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phoneNumber"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PhoneNumber = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputVerifyPaymentInput(ctx context.Context, obj any) (model.VerifyPaymentInput, error) {
 	var it model.VerifyPaymentInput
 	asMap := map[string]any{}
@@ -10490,6 +10795,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateProfile":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateProfile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatePhoneNumber":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updatePhoneNumber(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -12123,6 +12435,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "clerkUserId":
+			out.Values[i] = ec._User_clerkUserId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12135,6 +12452,44 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "phone":
 			out.Values[i] = ec._User_phone(ctx, field, obj)
+		case "phoneVerified":
+			out.Values[i] = ec._User_phoneVerified(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "phoneUpdatedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_phoneUpdatedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "address":
 			out.Values[i] = ec._User_address(ctx, field, obj)
 		case "role":
@@ -12152,6 +12507,42 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_createdAt(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updatedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_updatedAt(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13137,6 +13528,11 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUpdatePhoneInput2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋgraphᚋmodelᚐUpdatePhoneInput(ctx context.Context, v any) (model.UpdatePhoneInput, error) {
+	res, err := ec.unmarshalInputUpdatePhoneInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
