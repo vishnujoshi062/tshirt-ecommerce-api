@@ -224,13 +224,16 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 		return nil, fmt.Errorf("forbidden: can only attach cart to your own account")
 	}
 
-	// Parse cartId - handle both string and numeric IDs
-	var cartID uint
-	if id, err := strconv.ParseUint(input.CartID, 10, 32); err == nil {
-		cartID = uint(id)
-	} else {
-		return nil, fmt.Errorf("invalid cart ID format: must be a numeric ID")
+	// Parse cartId - must be a numeric string
+	if input.CartID == "" {
+		return nil, fmt.Errorf("invalid cart ID: cart ID cannot be empty")
 	}
+	
+	id, err := strconv.ParseUint(input.CartID, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cart ID: '%s' is not a valid numeric ID (error: %v)", input.CartID, err)
+	}
+	cartID := uint(id)
 
 	// Find the cart
 	var cart models.Cart
