@@ -8,7 +8,7 @@ import (
 
 type Cart struct {
     ID        uint `gorm:"primaryKey"`
-    UserID    *string `gorm:"index"` // Make it nullable with *string for guest carts
+    UserID    *string `gorm:"uniqueIndex"` // Make it nullable with *string for guest carts
     CreatedAt time.Time
     UpdatedAt time.Time
     DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -18,7 +18,7 @@ type Cart struct {
 }
 
 type CartItem struct {
-    ID        uint `gorm:"primaryKey"`
+    ID           uint `gorm:"primaryKey"`
     CartID    uint `gorm:"not null"`
     VariantID uint `gorm:"not null"`
     Quantity  int  `gorm:"not null"`
