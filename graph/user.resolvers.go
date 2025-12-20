@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
@@ -23,7 +24,24 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, name *string, phon
 
 // UpdatePhoneNumber is the resolver for the updatePhoneNumber field.
 func (r *mutationResolver) UpdatePhoneNumber(ctx context.Context, input model.UpdatePhoneInput) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: UpdatePhoneNumber - updatePhoneNumber"))
+	// Get user from context
+	claims := middleware.GetUserFromContext(ctx)
+	if claims == nil {
+		return nil, errors.New("unauthorized: no valid token provided")
+	}
+
+	// Validate phone number format (E.164)
+	if !isValidE164Phone(input.PhoneNumber) {
+		return nil, errors.New("invalid phone number format: must be in E.164 format (e.g., +1234567890)")
+	}
+
+	// Update phone number in database
+	user, err := r.UserRepository.UpdatePhoneNumber(claims.UserID, input.PhoneNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update phone number: %w", err)
+	}
+
+	return user, nil
 }
 
 // Me is the resolver for the me field.
@@ -55,7 +73,11 @@ func (r *userResolver) ID(ctx context.Context, obj *models.User) (string, error)
 
 // PhoneUpdatedAt is the resolver for the phoneUpdatedAt field.
 func (r *userResolver) PhoneUpdatedAt(ctx context.Context, obj *models.User) (*string, error) {
-	panic(fmt.Errorf("not implemented: PhoneUpdatedAt - phoneUpdatedAt"))
+	if obj.PhoneUpdatedAt == nil {
+		return nil, nil
+	}
+	formatted := obj.PhoneUpdatedAt.Format("2006-01-02T15:04:05Z07:00")
+	return &formatted, nil
 }
 
 // CreatedAt is the resolver for the createdAt field.
@@ -65,7 +87,16 @@ func (r *userResolver) CreatedAt(ctx context.Context, obj *models.User) (string,
 
 // UpdatedAt is the resolver for the updatedAt field.
 func (r *userResolver) UpdatedAt(ctx context.Context, obj *models.User) (string, error) {
-	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
+	return obj.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+}
+
+// isValidE164Phone validates phone number in E.164 format
+// E.164 format: +[country code][number] (e.g., +1234567890)
+func isValidE164Phone(phone string) bool {
+	// E.164 format: + followed by 1-15 digits
+	pattern := `^\+[1-9]\d{1,14}$`
+	matched, _ := regexp.MatchString(pattern, phone)
+	return matched
 }
 
 // User returns generated.UserResolver implementation.

@@ -224,10 +224,12 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 		return nil, fmt.Errorf("forbidden: can only attach cart to your own account")
 	}
 
-	// Parse cartId
-	cartID, err := strconv.ParseUint(input.CartID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid cart ID")
+	// Parse cartId - handle both string and numeric IDs
+	var cartID uint
+	if id, err := strconv.ParseUint(input.CartID, 10, 32); err == nil {
+		cartID = uint(id)
+	} else {
+		return nil, fmt.Errorf("invalid cart ID format: must be a numeric ID")
 	}
 
 	// Find the cart
@@ -235,7 +237,7 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 	if err := r.DB.Preload("CartItems").
 		Preload("CartItems.Variant").
 		Preload("CartItems.Variant.Product").
-		First(&cart, uint(cartID)).Error; err != nil {
+		First(&cart, cartID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("cart not found")
 		}
