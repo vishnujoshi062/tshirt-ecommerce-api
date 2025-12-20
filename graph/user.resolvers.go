@@ -73,10 +73,10 @@ func (r *userResolver) ID(ctx context.Context, obj *models.User) (string, error)
 
 // PhoneUpdatedAt is the resolver for the phoneUpdatedAt field.
 func (r *userResolver) PhoneUpdatedAt(ctx context.Context, obj *models.User) (*string, error) {
-	if obj.PhoneUpdatedAt == nil {
+	if !obj.PhoneUpdatedAt.Valid {
 		return nil, nil
 	}
-	formatted := obj.PhoneUpdatedAt.Format("2006-01-02T15:04:05Z07:00")
+	formatted := obj.PhoneUpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00")
 	return &formatted, nil
 }
 
