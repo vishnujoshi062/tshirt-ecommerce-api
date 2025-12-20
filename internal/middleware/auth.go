@@ -13,37 +13,28 @@ const UserContextKey = contextKey("user")
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		// ✅ Allow public OPTIONS requests (CORS)
+		// Allow OPTIONS (CORS)
 		if r.Method == "OPTIONS" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// ✅ Allow GraphQL Playground without token
-		if r.URL.Path == "/" {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// ✅ Read auth token
 		authHeader := r.Header.Get("Authorization")
 
-		// ✅ Allow unauthenticated operations
+		// No token → proceed WITHOUT user context
 		if authHeader == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// ✅ Validate Clerk token
+		// Validate Clerk token
 		claims, err := auth.ValidateClerkToken(authHeader)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"error":"Unauthorized (invalid Clerk token)"}`))
+			http.Error(w, "Unauthorized (invalid Clerk token)", http.StatusUnauthorized)
 			return
 		}
 
-		// ✅ Attach user context
+		// Attach user context
 		ctx := context.WithValue(r.Context(), UserContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

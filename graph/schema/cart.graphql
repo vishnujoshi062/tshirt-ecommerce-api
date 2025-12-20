@@ -40,7 +40,7 @@ input ClearCartInput {
 input AttachCartToUserInput {
   cartId: ID!
   userId: ID!
-}
+} 
 
 type AddToCartPayload {
   cart: Cart!
