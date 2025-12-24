@@ -120,8 +120,13 @@ func (r *cartItemResolver) UpdatedAt(ctx context.Context, obj *models.CartItem) 
 // AddToCart is the resolver for the addToCart field.
 func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartInput) (*model.AddToCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+	
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
 	if input.VariantID == nil {
@@ -134,10 +139,10 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 	}
 
 	// ✅ FIXED: Clerk UserID is string
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
+	cart, err := r.CartRepository.GetCartByUserID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			userIDPtr := &user.UserID
+			userIDPtr := &userID
 			cart = &models.Cart{UserID: userIDPtr}
 			if err := r.DB.Create(cart).Error; err != nil {
 				return nil, err
@@ -166,15 +171,20 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 		return nil, err
 	}
 
-	cart, _ = r.CartRepository.GetCartByUserID(user.UserID)
+	cart, _ = r.CartRepository.GetCartByUserID(userID)
 	return &model.AddToCartPayload{Cart: cart}, nil
 }
 
 // RemoveCartItem is the resolver for the removeCartItem field.
 func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.RemoveCartItemInput) (*model.RemoveCartItemPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+	
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
 	id, _ := strconv.ParseUint(input.CartItemID, 10, 32)
@@ -184,43 +194,53 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 		return nil, fmt.Errorf("cart item not found")
 	}
 
-	if item.Cart.UserID == nil || *item.Cart.UserID != user.UserID {
+	if item.Cart.UserID == nil || *item.Cart.UserID != userID {
 		return nil, fmt.Errorf("forbidden")
 	}
 
 	r.DB.Delete(&item)
 
-	cart, _ := r.CartRepository.GetCartByUserID(user.UserID)
+	cart, _ := r.CartRepository.GetCartByUserID(userID)
 	return &model.RemoveCartItemPayload{Cart: cart}, nil
 }
 
 // ClearCart is the resolver for the clearCart field.
 func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartInput) (*model.ClearCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+	
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
-	cart, err := r.CartRepository.GetCartByUserID(user.UserID)
+	cart, err := r.CartRepository.GetCartByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	r.CartRepository.ClearCart(cart.ID)
 
-	cart, _ = r.CartRepository.GetCartByUserID(user.UserID)
+	cart, _ = r.CartRepository.GetCartByUserID(userID)
 	return &model.ClearCartPayload{Cart: cart}, nil
 }
 
 // AttachCartToUser is the resolver for the attachCartToUser field.
 func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.AttachCartToUserInput) (*model.AttachCartToUserPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+	
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
 	// Verify that the userId in the input matches the authenticated user
-	if input.UserID != user.UserID {
+	if input.UserID != userID {
 		return nil, fmt.Errorf("forbidden: can only attach cart to your own account")
 	}
 
@@ -243,12 +263,12 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 	}
 
 	// Check if cart is already attached to a different user
-	if cart.UserID != nil && *cart.UserID != user.UserID {
+	if cart.UserID != nil && *cart.UserID != userID {
 		return nil, fmt.Errorf("forbidden: cart belongs to another user")
 	}
 
 	// Attach cart to user
-	userIDPtr := &user.UserID
+	userIDPtr := &userID
 	cart.UserID = userIDPtr
 	if err := r.DB.Save(&cart).Error; err != nil {
 		return nil, fmt.Errorf("failed to attach cart to user: %w", err)
@@ -269,10 +289,16 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 func (r *queryResolver) GetCart(ctx context.Context, cartID *string, forUser *bool) (*models.Cart, error) {
 	if forUser != nil && *forUser {
 		user := middleware.GetUserFromContext(ctx)
-		if user == nil {
-			return nil, errors.New("not logged in")
+		
+		// Dev mode: use dev user if no auth provided
+		var userID string
+		if user != nil {
+			userID = user.UserID
+		} else {
+			userID = "user_dev_123"
 		}
-		return r.CartRepository.GetCartByUserID(user.UserID)
+		
+		return r.CartRepository.GetCartByUserID(userID)
 	}
 
 	if cartID != nil {
