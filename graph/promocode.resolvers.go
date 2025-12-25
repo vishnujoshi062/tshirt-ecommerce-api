@@ -14,27 +14,6 @@ import (
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 )
 
-// parseFlexibleDate attempts to parse a date string using multiple common formats
-func parseFlexibleDate(dateStr string) (time.Time, error) {
-	formats := []string{
-		time.RFC3339Nano,           // 2025-12-31T23:59:00.000Z
-		time.RFC3339,               // 2025-12-31T23:59:00Z
-		"2006-01-02T15:04:05",      // 2025-12-31T23:59:00
-		"2006-01-02T15:04",         // 2025-12-31T23:59
-		"2006-01-02",               // 2025-12-31
-		"01/02/2006",               // 12/31/2025
-		"01/02/2006 15:04:05",      // 12/31/2025 23:59:00
-	}
-
-	for _, format := range formats {
-		if t, err := time.Parse(format, dateStr); err == nil {
-			return t, nil
-		}
-	}
-
-	return time.Time{}, errors.New("unable to parse date: " + dateStr)
-}
-
 // Mutations
 func (r *mutationResolver) CreatePromoCode(ctx context.Context, input model.PromoCodeInput) (*models.PromoCode, error) {
 	// Allow for testing - remove in production
@@ -50,7 +29,7 @@ func (r *mutationResolver) CreatePromoCode(ctx context.Context, input model.Prom
 		return nil, errors.New("fixed discount must be greater than 0")
 	}
 
-	validUntil, err := parseFlexibleDate(input.ValidUntil)
+	validUntil, err := time.Parse(time.RFC3339, input.ValidUntil)
 	if err != nil {
 		return nil, errors.New("invalid validUntil format: " + err.Error())
 	}
@@ -64,7 +43,7 @@ func (r *mutationResolver) CreatePromoCode(ctx context.Context, input model.Prom
 	}
 
 	if input.ValidFrom != nil {
-		validFrom, err := parseFlexibleDate(*input.ValidFrom)
+		validFrom, err := time.Parse(time.RFC3339, *input.ValidFrom)
 		if err != nil {
 			return nil, errors.New("invalid validFrom format: " + err.Error())
 		}
@@ -102,14 +81,14 @@ func (r *mutationResolver) UpdatePromoCode(ctx context.Context, id string, input
 	updates["discount_type"] = input.DiscountType
 	updates["discount_value"] = input.DiscountValue
 
-	validUntil, err := parseFlexibleDate(input.ValidUntil)
+	validUntil, err := time.Parse(time.RFC3339, input.ValidUntil)
 	if err != nil {
 		return nil, errors.New("invalid validUntil format: " + err.Error())
 	}
 	updates["valid_until"] = validUntil
 
 	if input.ValidFrom != nil {
-		validFrom, err := parseFlexibleDate(*input.ValidFrom)
+		validFrom, err := time.Parse(time.RFC3339, *input.ValidFrom)
 		if err != nil {
 			return nil, errors.New("invalid validFrom format: " + err.Error())
 		}

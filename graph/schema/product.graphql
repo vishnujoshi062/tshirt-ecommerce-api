@@ -2,7 +2,8 @@ type Product {
   id: ID!
   name: String!
   description: String
-  designImageURL: String!
+  designImageURL: String  # Keep for backward compatibility
+  imageURLs: [String!]    # NEW: Array of image URLs
   basePrice: Float!
   isActive: Boolean!
   variants: [ProductVariant]
@@ -41,7 +42,8 @@ type Inventory {
 input ProductInput {
   name: String!
   description: String
-  designImageURL: String!
+  designImageURL: String  # Keep for backward compatibility
+  imageURLs: [String!]    # NEW: Array of image URLs
   basePrice: Float!
   material: String
   neckline: String

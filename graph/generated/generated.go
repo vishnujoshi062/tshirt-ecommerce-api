@@ -168,6 +168,7 @@ type ComplexityRoot struct {
 		Featured         func(childComplexity int) int
 		Fit              func(childComplexity int) int
 		ID               func(childComplexity int) int
+		ImageURLs        func(childComplexity int) int
 		IsActive         func(childComplexity int) int
 		Material         func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -322,6 +323,8 @@ type PaymentResolver interface {
 }
 type ProductResolver interface {
 	ID(ctx context.Context, obj *models.Product) (string, error)
+
+	ImageURLs(ctx context.Context, obj *models.Product) ([]string, error)
 
 	CreatedAt(ctx context.Context, obj *models.Product) (string, error)
 }
@@ -947,6 +950,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Product.ID(childComplexity), true
+	case "Product.imageURLs":
+		if e.complexity.Product.ImageURLs == nil {
+			break
+		}
+
+		return e.complexity.Product.ImageURLs(childComplexity), true
 	case "Product.isActive":
 		if e.complexity.Product.IsActive == nil {
 			break
@@ -1536,7 +1545,7 @@ input ClearCartInput {
 input AttachCartToUserInput {
   cartId: ID!
   userId: ID!
-}
+} 
 
 type AddToCartPayload {
   cart: Cart!
@@ -1638,7 +1647,8 @@ extend type Mutation {
   id: ID!
   name: String!
   description: String
-  designImageURL: String!
+  designImageURL: String  # Keep for backward compatibility
+  imageURLs: [String!]    # NEW: Array of image URLs
   basePrice: Float!
   isActive: Boolean!
   variants: [ProductVariant]
@@ -1677,7 +1687,8 @@ type Inventory {
 input ProductInput {
   name: String!
   description: String
-  designImageURL: String!
+  designImageURL: String  # Keep for backward compatibility
+  imageURLs: [String!]    # NEW: Array of image URLs
   basePrice: Float!
   material: String
   neckline: String
@@ -3535,6 +3546,8 @@ func (ec *executionContext) fieldContext_Mutation_createProduct(ctx context.Cont
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -3612,6 +3625,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProduct(ctx context.Cont
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -4947,9 +4962,9 @@ func (ec *executionContext) _Product_designImageURL(ctx context.Context, field g
 			return obj.DesignImageURL, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2string,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -4959,6 +4974,35 @@ func (ec *executionContext) fieldContext_Product_designImageURL(_ context.Contex
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Product_imageURLs(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Product_imageURLs,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Product().ImageURLs(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚕstringᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Product_imageURLs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Product",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -5813,6 +5857,8 @@ func (ec *executionContext) fieldContext_ProductVariant_product(_ context.Contex
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -6552,6 +6598,8 @@ func (ec *executionContext) fieldContext_Query_products(ctx context.Context, fie
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -6629,6 +6677,8 @@ func (ec *executionContext) fieldContext_Query_product(ctx context.Context, fiel
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -6706,6 +6756,8 @@ func (ec *executionContext) fieldContext_Query_productsByCategory(ctx context.Co
 				return ec.fieldContext_Product_description(ctx, field)
 			case "designImageURL":
 				return ec.fieldContext_Product_designImageURL(ctx, field)
+			case "imageURLs":
+				return ec.fieldContext_Product_imageURLs(ctx, field)
 			case "basePrice":
 				return ec.fieldContext_Product_basePrice(ctx, field)
 			case "isActive":
@@ -9174,7 +9226,7 @@ func (ec *executionContext) unmarshalInputProductInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "designImageURL", "basePrice", "material", "neckline", "sleeveType", "fit", "brand", "category", "careInstructions", "weight", "featured"}
+	fieldsInOrder := [...]string{"name", "description", "designImageURL", "imageURLs", "basePrice", "material", "neckline", "sleeveType", "fit", "brand", "category", "careInstructions", "weight", "featured"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9197,11 +9249,18 @@ func (ec *executionContext) unmarshalInputProductInput(ctx context.Context, obj 
 			it.Description = data
 		case "designImageURL":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("designImageURL"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.DesignImageURL = data
+		case "imageURLs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageURLs"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageURLs = data
 		case "basePrice":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePrice"))
 			data, err := ec.unmarshalNFloat2float64(ctx, v)
@@ -11065,9 +11124,39 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Product_description(ctx, field, obj)
 		case "designImageURL":
 			out.Values[i] = ec._Product_designImageURL(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+		case "imageURLs":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Product_imageURLs(ctx, field, obj)
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "basePrice":
 			out.Values[i] = ec._Product_basePrice(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13595,6 +13684,42 @@ func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.S
 	_ = ctx
 	res := graphql.MarshalString(v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

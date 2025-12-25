@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/lib/pq"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
@@ -32,11 +33,52 @@ func (r *inventoryResolver) AvailableQuantity(ctx context.Context, obj *models.I
 // CreateProduct is the resolver for the createProduct field.
 func (r *mutationResolver) CreateProduct(ctx context.Context, input model.ProductInput) (*models.Product, error) {
 	product := &models.Product{
-		Name:           input.Name,
-		Description:    input.Description,
-		DesignImageURL: input.DesignImageURL,
-		BasePrice:      input.BasePrice,
-		IsActive:       true,
+		Name:        input.Name,
+		Description: input.Description,
+		BasePrice:   input.BasePrice,
+		IsActive:    true,
+	}
+
+	// Handle DesignImageURL (pointer)
+	if input.DesignImageURL != nil {
+		product.DesignImageURL = *input.DesignImageURL
+	}
+
+	// Handle imageURLs: if provided, use it; otherwise fall back to designImageURL
+	if input.ImageURLs != nil && len(input.ImageURLs) > 0 {
+		product.ImageURLs = pq.StringArray(input.ImageURLs)
+	} else if input.DesignImageURL != nil && *input.DesignImageURL != "" {
+		// Backward compatibility: populate imageURLs from designImageURL
+		product.ImageURLs = pq.StringArray{*input.DesignImageURL}
+	}
+
+	// Handle other optional fields
+	if input.Material != nil {
+		product.Material = *input.Material
+	}
+	if input.Neckline != nil {
+		product.Neckline = *input.Neckline
+	}
+	if input.SleeveType != nil {
+		product.SleeveType = *input.SleeveType
+	}
+	if input.Fit != nil {
+		product.Fit = *input.Fit
+	}
+	if input.Brand != nil {
+		product.Brand = *input.Brand
+	}
+	if input.Category != nil {
+		product.Category = *input.Category
+	}
+	if input.CareInstructions != nil {
+		product.CareInstructions = *input.CareInstructions
+	}
+	if input.Weight != nil {
+		product.Weight = *input.Weight
+	}
+	if input.Featured != nil {
+		product.Featured = *input.Featured
 	}
 
 	if err := r.ProductRepository.CreateProduct(product); err != nil {
@@ -60,8 +102,49 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, id string, input m
 
 	product.Name = input.Name
 	product.Description = input.Description
-	product.DesignImageURL = input.DesignImageURL
 	product.BasePrice = input.BasePrice
+
+	// Handle DesignImageURL (pointer)
+	if input.DesignImageURL != nil {
+		product.DesignImageURL = *input.DesignImageURL
+	}
+
+	// Handle imageURLs: if provided, use it; otherwise fall back to designImageURL
+	if input.ImageURLs != nil && len(input.ImageURLs) > 0 {
+		product.ImageURLs = pq.StringArray(input.ImageURLs)
+	} else if input.DesignImageURL != nil && *input.DesignImageURL != "" {
+		// Backward compatibility: populate imageURLs from designImageURL
+		product.ImageURLs = pq.StringArray{*input.DesignImageURL}
+	}
+
+	// Handle other optional fields
+	if input.Material != nil {
+		product.Material = *input.Material
+	}
+	if input.Neckline != nil {
+		product.Neckline = *input.Neckline
+	}
+	if input.SleeveType != nil {
+		product.SleeveType = *input.SleeveType
+	}
+	if input.Fit != nil {
+		product.Fit = *input.Fit
+	}
+	if input.Brand != nil {
+		product.Brand = *input.Brand
+	}
+	if input.Category != nil {
+		product.Category = *input.Category
+	}
+	if input.CareInstructions != nil {
+		product.CareInstructions = *input.CareInstructions
+	}
+	if input.Weight != nil {
+		product.Weight = *input.Weight
+	}
+	if input.Featured != nil {
+		product.Featured = *input.Featured
+	}
 
 	if err := r.ProductRepository.UpdateProduct(product); err != nil {
 		return nil, fmt.Errorf("failed to update product: %w", err)
@@ -141,6 +224,16 @@ func (r *productResolver) ID(ctx context.Context, obj *models.Product) (string, 
 	return strconv.FormatUint(uint64(obj.ID), 10), nil
 }
 
+// ImageURLs is the resolver for the imageURLs field.
+func (r *productResolver) ImageURLs(ctx context.Context, obj *models.Product) ([]string, error) {
+	// If imageURLs is empty but designImageURL exists, populate it for backward compatibility
+	if len(obj.ImageURLs) == 0 && obj.DesignImageURL != "" {
+		return []string{obj.DesignImageURL}, nil
+	}
+	// Convert pq.StringArray to []string
+	return []string(obj.ImageURLs), nil
+}
+
 // CreatedAt is the resolver for the createdAt field.
 func (r *productResolver) CreatedAt(ctx context.Context, obj *models.Product) (string, error) {
 	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
@@ -185,6 +278,11 @@ func (r *queryResolver) Products(ctx context.Context, isActive *bool) ([]*models
 			products[i].Variants = []models.ProductVariant{}
 		}
 
+		// Backward compatibility: populate imageURLs from designImageURL if empty
+		if len(products[i].ImageURLs) == 0 && products[i].DesignImageURL != "" {
+			products[i].ImageURLs = pq.StringArray{products[i].DesignImageURL}
+		}
+
 		out = append(out, &products[i])
 	}
 
@@ -205,6 +303,11 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product
 
 	if product.Variants == nil {
 		product.Variants = []models.ProductVariant{}
+	}
+
+	// Backward compatibility: populate imageURLs from designImageURL if empty
+	if len(product.ImageURLs) == 0 && product.DesignImageURL != "" {
+		product.ImageURLs = pq.StringArray{product.DesignImageURL}
 	}
 
 	return product, nil

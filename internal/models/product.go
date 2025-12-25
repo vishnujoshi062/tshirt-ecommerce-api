@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -9,7 +10,8 @@ type Product struct {
 	ID             uint   `gorm:"primaryKey"`
 	Name           string `gorm:"not null"`
 	Description    *string
-	DesignImageURL string  `gorm:"not null"`
+	DesignImageURL string         `gorm:"type:varchar(500)"` // Keep for backward compatibility
+	ImageURLs      pq.StringArray `gorm:"type:text[]"`      // NEW: Array of image URLs
 	BasePrice      float64 `gorm:"not null"`
 
 	Material         string            `gorm:"type:varchar(100)"`

@@ -55,7 +55,8 @@ type Mutation struct {
 type ProductInput struct {
 	Name             string   `json:"name"`
 	Description      *string  `json:"description,omitempty"`
-	DesignImageURL   string   `json:"designImageURL"`
+	DesignImageURL   *string  `json:"designImageURL,omitempty"`
+	ImageURLs        []string `json:"imageURLs,omitempty"`
 	BasePrice        float64  `json:"basePrice"`
 	Material         *string  `json:"material,omitempty"`
 	Neckline         *string  `json:"neckline,omitempty"`
