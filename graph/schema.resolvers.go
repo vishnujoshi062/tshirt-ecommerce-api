@@ -9,11 +9,17 @@ import (
 	"fmt"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 )
 
 // Ping is the resolver for the ping field.
 func (r *mutationResolver) Ping(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Ping - ping"))
+}
+
+// CreatePaymentOrder is the resolver for the createPaymentOrder field.
+func (r *mutationResolver) CreatePaymentOrder(ctx context.Context, amount int) (*model.RazorpayOrder, error) {
+	panic(fmt.Errorf("not implemented: CreatePaymentOrder - createPaymentOrder"))
 }
 
 // Ping is the resolver for the ping field.

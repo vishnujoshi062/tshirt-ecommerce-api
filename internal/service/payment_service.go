@@ -4,9 +4,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 
-	razorpay "github.com/razorpay/razorpay-go"
+	"github.com/razorpay/razorpay-go"
 )
 
 type PaymentService struct {
@@ -19,27 +20,43 @@ func NewPaymentService() *PaymentService {
 		os.Getenv("RAZORPAY_KEY_SECRET"),
 	)
 
-	return &PaymentService{Client: client}
+	return &PaymentService{
+		Client: client,
+	}
 }
 
-func (s *PaymentService) CreateOrder(amount float64, currency string, receipt string) (map[string]interface{}, error) {
-	data := map[string]interface{}{
-		"amount":   int(amount * 100), // Amount in paise
+func (ps *PaymentService) CreateOrder(amount float64, currency string, receipt string) (map[string]interface{}, error) {
+	if ps.Client == nil {
+		return nil, fmt.Errorf("payment client not initialized")
+	}
+
+	// Convert amount to paise (multiply by 100)
+	amountPaise := int64(amount * 100)
+
+	params := map[string]interface{}{
+		"amount":   amountPaise,
 		"currency": currency,
 		"receipt":  receipt,
 	}
 
-	body, err := s.Client.Order.Create(data, nil)
-	return body, err
+	order, err := ps.Client.Order.Create(params, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return order, nil
 }
 
-func (s *PaymentService) VerifySignature(orderID, paymentID, signature string) bool {
+func (ps *PaymentService) VerifySignature(razorpayOrderID, razorpayPaymentID, razorpaySignature string) bool {
 	secret := os.Getenv("RAZORPAY_KEY_SECRET")
-	data := orderID + "|" + paymentID
+	if secret == "" {
+		return false
+	}
 
+	data := razorpayOrderID + "|" + razorpayPaymentID
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(data))
 	expectedSignature := hex.EncodeToString(h.Sum(nil))
 
-	return hmac.Equal([]byte(expectedSignature), []byte(signature))
+	return expectedSignature == razorpaySignature
 }

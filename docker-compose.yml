@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: tshirt_api
+    env_file:
+      - .env
     environment:
       PORT: 8081
       DB_HOST: postgres
@@ -12,16 +14,6 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: tshirt_ecommerce
       DB_SSLMODE: disable
-      GOOGLE_CLIENT_ID: ""
-      GOOGLE_CLIENT_SECRET: ""
-      GOOGLE_REDIRECT_URL: ""
-      RAZORPAY_KEY_ID: ""
-      RAZORPAY_KEY_SECRET: ""
-      # Adding Clerk environment variables explicitly
-      CLERK_SECRET_KEY: "sk_test_ot5ELnkap2n0G1uhumylzZcAneJvVjYz4lrJPKUUhc"
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2FyZWZ1bC10b21jYXQtODYuY2xlcmsuYWNjb3VudHMuZGV2JA"
-    env_file:
-      - .env
     ports:
       - "8081:8081"
     depends_on:

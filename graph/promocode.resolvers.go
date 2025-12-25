@@ -6,219 +6,66 @@ package graph
 
 import (
 	"context"
-	"errors"
-	"time"
+	"fmt"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 )
 
-// Mutations
+// CreatePromoCode is the resolver for the createPromoCode field.
 func (r *mutationResolver) CreatePromoCode(ctx context.Context, input model.PromoCodeInput) (*models.PromoCode, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return nil, err
-	// }
-
-	// Validation
-	if input.DiscountType == models.DiscountTypePercentage && (input.DiscountValue <= 0 || input.DiscountValue > 100) {
-		return nil, errors.New("percentage must be between 1 and 100")
-	}
-	if input.DiscountType == models.DiscountTypeFixed && input.DiscountValue <= 0 {
-		return nil, errors.New("fixed discount must be greater than 0")
-	}
-
-	validUntil, err := time.Parse(time.RFC3339, input.ValidUntil)
-	if err != nil {
-		return nil, errors.New("invalid validUntil format: " + err.Error())
-	}
-
-	promo := &models.PromoCode{
-		Code:          input.Code,
-		DiscountType:  input.DiscountType,
-		DiscountValue: input.DiscountValue,
-		ValidUntil:    validUntil,
-		IsActive:      true,
-	}
-
-	if input.ValidFrom != nil {
-		validFrom, err := time.Parse(time.RFC3339, *input.ValidFrom)
-		if err != nil {
-			return nil, errors.New("invalid validFrom format: " + err.Error())
-		}
-		promo.ValidFrom = &validFrom
-	}
-
-	if input.IsActive != nil {
-		promo.IsActive = *input.IsActive
-	}
-
-	if input.UsageLimit != nil {
-		limit := *input.UsageLimit
-		promo.UsageLimit = &limit
-	}
-
-	if err := r.PromoCodeRepo.Create(promo); err != nil {
-		return nil, err
-	}
-
-	return promo, nil
+	panic(fmt.Errorf("not implemented: CreatePromoCode - createPromoCode"))
 }
 
 // UpdatePromoCode is the resolver for the updatePromoCode field.
 func (r *mutationResolver) UpdatePromoCode(ctx context.Context, id string, input model.PromoCodeInput) (*models.PromoCode, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return nil, err
-	// }
-
-	updates := make(map[string]interface{})
-
-	if input.Code != "" {
-		updates["code"] = input.Code
-	}
-	updates["discount_type"] = input.DiscountType
-	updates["discount_value"] = input.DiscountValue
-
-	validUntil, err := time.Parse(time.RFC3339, input.ValidUntil)
-	if err != nil {
-		return nil, errors.New("invalid validUntil format: " + err.Error())
-	}
-	updates["valid_until"] = validUntil
-
-	if input.ValidFrom != nil {
-		validFrom, err := time.Parse(time.RFC3339, *input.ValidFrom)
-		if err != nil {
-			return nil, errors.New("invalid validFrom format: " + err.Error())
-		}
-		updates["valid_from"] = &validFrom
-	}
-
-	if input.IsActive != nil {
-		updates["is_active"] = *input.IsActive
-	}
-
-	if input.UsageLimit != nil {
-		updates["usage_limit"] = *input.UsageLimit
-	}
-
-	promo, err := r.PromoCodeRepo.Update(id, updates)
-	if err != nil {
-		return nil, err
-	}
-
-	return promo, nil
+	panic(fmt.Errorf("not implemented: UpdatePromoCode - updatePromoCode"))
 }
 
 // DeletePromoCode is the resolver for the deletePromoCode field.
 func (r *mutationResolver) DeletePromoCode(ctx context.Context, id string) (bool, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return false, err
-	// }
-
-	if err := r.PromoCodeRepo.Delete(id); err != nil {
-		return false, err
-	}
-	return true, nil
+	panic(fmt.Errorf("not implemented: DeletePromoCode - deletePromoCode"))
 }
 
 // TogglePromoCodeStatus is the resolver for the togglePromoCodeStatus field.
 func (r *mutationResolver) TogglePromoCodeStatus(ctx context.Context, id string) (*models.PromoCode, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return nil, err
-	// }
-
-	promo, err := r.PromoCodeRepo.FindByCode(id) // Or find by ID
-	if err != nil {
-		return nil, err
-	}
-
-	updates := map[string]interface{}{
-		"is_active": !promo.IsActive,
-	}
-
-	updated, err := r.PromoCodeRepo.Update(id, updates)
-	if err != nil {
-		return nil, err
-	}
-
-	return updated, nil
+	panic(fmt.Errorf("not implemented: TogglePromoCodeStatus - togglePromoCodeStatus"))
 }
 
 // ValidFrom is the resolver for the validFrom field.
 func (r *promoCodeResolver) ValidFrom(ctx context.Context, obj *models.PromoCode) (*string, error) {
-	if obj.ValidFrom == nil {
-		return nil, nil
-	}
-	validFrom := obj.ValidFrom.Format(time.RFC3339)
-	return &validFrom, nil
+	panic(fmt.Errorf("not implemented: ValidFrom - validFrom"))
 }
 
 // ValidUntil is the resolver for the validUntil field.
 func (r *promoCodeResolver) ValidUntil(ctx context.Context, obj *models.PromoCode) (string, error) {
-	return obj.ValidUntil.Format(time.RFC3339), nil
+	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *promoCodeResolver) CreatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	return obj.CreatedAt.Format(time.RFC3339), nil
+	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
 }
 
 // UpdatedAt is the resolver for the updatedAt field.
 func (r *promoCodeResolver) UpdatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	return obj.UpdatedAt.Format(time.RFC3339), nil
+	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
 }
 
-// PromoCodes resolver
+// PromoCodes is the resolver for the promoCodes field.
 func (r *queryResolver) PromoCodes(ctx context.Context, isActive *bool) ([]*models.PromoCode, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return nil, err
-	// }
-
-	promos, err := r.PromoCodeRepo.FindAll(isActive)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*models.PromoCode, len(promos))
-	for i, p := range promos {
-		result[i] = p
-	}
-	return result, nil
+	panic(fmt.Errorf("not implemented: PromoCodes - promoCodes"))
 }
 
 // PromoCode is the resolver for the promoCode field.
 func (r *queryResolver) PromoCode(ctx context.Context, code string) (*models.PromoCode, error) {
-	// Allow for testing - remove in production
-	// if err := middleware.RequireAdmin(ctx); err != nil {
-	// 	return nil, err
-	// }
-
-	promo, err := r.PromoCodeRepo.FindByCode(code)
-	if err != nil {
-		return nil, err
-	}
-	return promo, nil
+	panic(fmt.Errorf("not implemented: PromoCode - promoCode"))
 }
 
 // ValidatePromoCode is the resolver for the validatePromoCode field.
 func (r *queryResolver) ValidatePromoCode(ctx context.Context, code string, orderAmount float64) (*model.PromoCodeValidation, error) {
-	// Optional: add user authentication check here
-
-	result, err := r.PromoCodeService.ValidatePromoCode(code, orderAmount)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.PromoCodeValidation{
-		IsValid:        result.IsValid,
-		DiscountAmount: result.DiscountAmount,
-		Message:        &result.Message,
-	}, nil
+	panic(fmt.Errorf("not implemented: ValidatePromoCode - validatePromoCode"))
 }
 
 // PromoCode returns generated.PromoCodeResolver implementation.

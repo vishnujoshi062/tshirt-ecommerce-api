@@ -10,3 +10,7 @@ type Query {
 type Mutation {
   ping: String!
 }
+
+extend type Mutation {
+  createPaymentOrder(amount: Int!): RazorpayOrder!
+}
