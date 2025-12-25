@@ -40,7 +40,7 @@ func (r *mutationResolver) CreateRazorpayOrder(ctx context.Context, orderID stri
 	// Get the order from the database
 	order, err := r.OrderRepository.GetOrderByID(id)
 	if err != nil {
-		log.Printf("Error getting order: %v", err)
+		log.Printf("Order not found: %v", err)
 		return nil, fmt.Errorf("order not found: %v", err)
 	}
 	log.Printf("Found order with amount: %.2f", order.TotalAmount)

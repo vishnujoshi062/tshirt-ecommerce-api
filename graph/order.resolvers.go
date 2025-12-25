@@ -21,8 +21,13 @@ import (
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOrderInput) (*models.Order, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
 	var order *models.Order
@@ -31,7 +36,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 	// Start transaction
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get cart and items
-		cart, err := r.CartRepository.GetCartByUserID(user.UserID)
+		cart, err := r.CartRepository.GetCartByUserID(userID)
 		if err != nil {
 			return fmt.Errorf("failed to get cart: %w", err)
 		}
@@ -118,7 +123,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 
 		// Create order
 		order = &models.Order{
-			UserID:          user.UserID,
+			UserID:          userID,
 			TotalAmount:     finalTotal,
 			Discount:        discount,
 			PromoCode:       input.PromoCode,
@@ -243,11 +248,16 @@ func (r *paymentResolver) CreatedAt(ctx context.Context, obj *models.Payment) (s
 // MyOrders is the resolver for the myOrders field.
 func (r *queryResolver) MyOrders(ctx context.Context) ([]*models.Order, error) {
 	user := middleware.GetUserFromContext(ctx)
-	if user == nil {
-		return nil, errors.New("unauthorized")
+
+	// Dev mode: use dev user if no auth provided
+	var userID string
+	if user != nil {
+		userID = user.UserID
+	} else {
+		userID = "user_dev_123"
 	}
 
-	orders, err := r.OrderRepository.GetOrdersByUserID(user.UserID)
+	orders, err := r.OrderRepository.GetOrdersByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +285,16 @@ func (r *queryResolver) Order(ctx context.Context, id string) (*models.Order, er
 // AllOrders is the resolver for the allOrders field.
 func (r *queryResolver) AllOrders(ctx context.Context, status *string) ([]*models.Order, error) {
 	var orders []models.Order
-	r.DB.Preload("OrderItems").Find(&orders)
+	err := r.DB.
+		Preload("OrderItems").
+		Preload("OrderItems.Variant").
+		Preload("OrderItems.Variant.Product").
+		Preload("Payment").
+		Find(&orders).Error
+
+	if err != nil {
+		return nil, err
+	}
 
 	if status != nil {
 		filtered := []models.Order{}

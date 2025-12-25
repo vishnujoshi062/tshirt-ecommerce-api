@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/auth"
 )
@@ -20,23 +21,26 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		authHeader := r.Header.Get("Authorization")
+		log.Printf("AUTH MIDDLEWARE: method=%s path=%s auth_header=%s", r.Method, r.URL.Path, authHeader)
 
-		// No token → proceed WITHOUT user context
-		if authHeader == "" {
-			next.ServeHTTP(w, r)
-			return
+		// If token provided, try to validate it
+		if authHeader != "" {
+			claims, err := auth.ValidateClerkToken(authHeader)
+			if err == nil {
+				// Valid token → attach user context
+				log.Printf("AUTH MIDDLEWARE: Valid token for user %s", claims.UserID)
+				ctx := context.WithValue(r.Context(), UserContextKey, claims)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+			// Invalid token → log but continue (dev mode)
+			log.Printf("AUTH MIDDLEWARE: Invalid token, error: %v, continuing without auth", err)
 		}
 
-		// Validate Clerk token
-		claims, err := auth.ValidateClerkToken(authHeader)
-		if err != nil {
-			http.Error(w, "Unauthorized (invalid Clerk token)", http.StatusUnauthorized)
-			return
-		}
-
-		// Attach user context
-		ctx := context.WithValue(r.Context(), UserContextKey, claims)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		// No token or invalid token → proceed WITHOUT user context
+		// Resolvers will handle auth checks as needed
+		log.Printf("AUTH MIDDLEWARE: No auth, proceeding without user context")
+		next.ServeHTTP(w, r)
 	})
 }
 

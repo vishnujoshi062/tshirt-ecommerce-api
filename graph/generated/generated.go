@@ -107,6 +107,7 @@ type ComplexityRoot struct {
 		CancelOrder           func(childComplexity int, orderID string) int
 		ClearCart             func(childComplexity int, input model.ClearCartInput) int
 		CreateOrder           func(childComplexity int, input model.CreateOrderInput) int
+		CreatePaymentOrder    func(childComplexity int, amount int) int
 		CreateProduct         func(childComplexity int, input model.ProductInput) int
 		CreateProductVariant  func(childComplexity int, input model.ProductVariantInput) int
 		CreatePromoCode       func(childComplexity int, input model.PromoCodeInput) int
@@ -301,6 +302,7 @@ type MutationResolver interface {
 	UpdatePromoCode(ctx context.Context, id string, input model.PromoCodeInput) (*models.PromoCode, error)
 	DeletePromoCode(ctx context.Context, id string) (bool, error)
 	TogglePromoCodeStatus(ctx context.Context, id string) (*models.PromoCode, error)
+	CreatePaymentOrder(ctx context.Context, amount int) (*model.RazorpayOrder, error)
 	UpdateProfile(ctx context.Context, name *string, phone *string, address *string) (*models.User, error)
 }
 type OrderResolver interface {
@@ -582,6 +584,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateOrder(childComplexity, args["input"].(model.CreateOrderInput)), true
+	case "Mutation.createPaymentOrder":
+		if e.complexity.Mutation.CreatePaymentOrder == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPaymentOrder_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePaymentOrder(childComplexity, args["amount"].(int)), true
 	case "Mutation.createProduct":
 		if e.complexity.Mutation.CreateProduct == nil {
 			break
@@ -1577,7 +1590,7 @@ extend type Mutation {
 	{Name: "../schema/order.graphql", Input: `type Order {
   id: ID!
   userID: ID!
-  items: [OrderItem!]!
+  items: [OrderItem!]
   totalAmount: Float!
   discount: Float!
   promoCode: String
@@ -1794,6 +1807,10 @@ type Query {
 type Mutation {
   ping: String!
 }
+
+extend type Mutation {
+  createPaymentOrder(amount: Int!): RazorpayOrder!
+}
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `type User {
   id: ID!
@@ -1890,6 +1907,17 @@ func (ec *executionContext) field_Mutation_createOrder_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createPaymentOrder_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "amount", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["amount"] = arg0
 	return args, nil
 }
 
@@ -4062,6 +4090,57 @@ func (ec *executionContext) fieldContext_Mutation_togglePromoCodeStatus(ctx cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createPaymentOrder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createPaymentOrder,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().CreatePaymentOrder(ctx, fc.Args["amount"].(int))
+		},
+		nil,
+		ec.marshalNRazorpayOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋgraphᚋmodelᚐRazorpayOrder,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createPaymentOrder(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RazorpayOrder_id(ctx, field)
+			case "amount":
+				return ec.fieldContext_RazorpayOrder_amount(ctx, field)
+			case "currency":
+				return ec.fieldContext_RazorpayOrder_currency(ctx, field)
+			case "receipt":
+				return ec.fieldContext_RazorpayOrder_receipt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RazorpayOrder", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createPaymentOrder_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4187,9 +4266,9 @@ func (ec *executionContext) _Order_items(ctx context.Context, field graphql.Coll
 			return ec.resolvers.Order().Items(ctx, obj)
 		},
 		nil,
-		ec.marshalNOrderItem2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItemᚄ,
+		ec.marshalOOrderItem2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItemᚄ,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -10546,6 +10625,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createPaymentOrder":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createPaymentOrder(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "updateProfile":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateProfile(ctx, field)
@@ -10631,16 +10717,13 @@ func (ec *executionContext) _Order(ctx context.Context, sel ast.SelectionSet, ob
 		case "items":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Order_items(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -12908,50 +12991,6 @@ func (ec *executionContext) marshalNOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtsh
 	return ec._Order(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNOrderItem2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.OrderItem) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNOrderItem2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItem(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNOrderItem2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItem(ctx context.Context, sel ast.SelectionSet, v *models.OrderItem) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -13606,6 +13645,53 @@ func (ec *executionContext) marshalOOrder2ᚖgithubᚗcomᚋvishnujoshi062ᚋtsh
 		return graphql.Null
 	}
 	return ec._Order(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOrderItem2ᚕᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.OrderItem) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNOrderItem2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐOrderItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalOPayment2ᚖgithubᚗcomᚋvishnujoshi062ᚋtshirtᚑecommerceᚑapiᚋinternalᚋmodelsᚐPayment(ctx context.Context, sel ast.SelectionSet, v *models.Payment) graphql.Marshaler {
