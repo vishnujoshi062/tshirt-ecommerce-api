@@ -5,9 +5,8 @@ import (
 )
 
 type Order struct {
-	ID              uint     `gorm:"primaryKey"`
-	UserID          string   `gorm:"not null"`
-	User            User     `gorm:"foreignKey:UserID"`
+	ID              uint     `gorm:"primaryKey;autoIncrement"`
+	UserID          string   `gorm:"not null;type:varchar(255)"`
 	TotalAmount     float64  `gorm:"not null"`
 	Discount        float64  `gorm:"default:0"`
 	PromoCode       *string  `gorm:"type:varchar(50)"`
@@ -21,7 +20,7 @@ type Order struct {
 }
 
 type OrderItem struct {
-	ID        uint    `gorm:"primaryKey"`
+	ID        uint    `gorm:"primaryKey;autoIncrement"`
 	OrderID   uint    `gorm:"not null"`
 	VariantID uint    `gorm:"not null"`
 	Quantity  int     `gorm:"not null"`
@@ -32,7 +31,7 @@ type OrderItem struct {
 }
 
 type Payment struct {
-	ID            uint    `gorm:"primaryKey"`
+	ID            uint    `gorm:"primaryKey;autoIncrement"`
 	OrderID       uint    `gorm:"uniqueIndex"`
 	Amount        float64 `gorm:"not null"`
 	Status        string  `gorm:"not null"`

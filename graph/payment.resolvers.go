@@ -40,20 +40,8 @@ func (r *mutationResolver) CreateRazorpayOrder(ctx context.Context, orderID stri
 	// Get the order from the database
 	order, err := r.OrderRepository.GetOrderByID(id)
 	if err != nil {
-		log.Printf("Order not found, creating dummy order for testing: %v", err)
-		// Create a dummy order for testing
-		order = &models.Order{
-			ID:              id,
-			UserID:          "user_dev_123",
-			TotalAmount:     1000, // 1000 rupees
-			Status:          "pending",
-			ShippingAddress: "Test Address",
-		}
-		if err := r.OrderRepository.CreateOrder(order); err != nil {
-			log.Printf("Error creating dummy order: %v", err)
-			return nil, fmt.Errorf("failed to create order: %v", err)
-		}
-		log.Printf("Created dummy order with ID: %d", order.ID)
+		log.Printf("Order not found: %v", err)
+		return nil, fmt.Errorf("order not found: %v", err)
 	}
 	log.Printf("Found order with amount: %.2f", order.TotalAmount)
 

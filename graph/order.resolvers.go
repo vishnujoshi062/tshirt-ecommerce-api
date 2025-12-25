@@ -305,46 +305,7 @@ func (r *queryResolver) AllOrders(ctx context.Context, status *string) ([]*model
 	return out, nil
 }
 
-func (r *mutationResolver) CreatePaymentOrder(ctx context.Context, amount int) (*model.RazorpayOrder, error) {
 
-	order, err := r.PaymentService.CreateOrder(int64(amount), "order_rcpt_001")
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.RazorpayOrder{
-		ID:       order["id"].(string),
-		Amount:  int(order["amount"].(float64)),
-		Currency: order["currency"].(string),
-	}, nil
-}
-
-func (r *mutationResolver) VerifyPayment(
-	ctx context.Context,
-	input model.VerifyPaymentInput,
-) (bool, error) {
-
-	valid := payment.VerifySignature(
-		input.RazorpayOrderId,
-		input.RazorpayPaymentId,
-		input.RazorpaySignature,
-	)
-
-	if !valid {
-		return false, errors.New("invalid payment signature")
-	}
-
-	// Mark order as PAID
-	err := r.OrderService.MarkOrderPaid(
-		input.RazorpayOrderId,
-		input.RazorpayPaymentId,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
 
 // Order returns generated.OrderResolver implementation.
 func (r *Resolver) Order() generated.OrderResolver { return &orderResolver{r} }
