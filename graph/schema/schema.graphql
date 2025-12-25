@@ -11,12 +11,6 @@ type Mutation {
   ping: String!
 }
 
-type RazorpayOrder {
-  id: ID!
-  amount: Int!
-  currency: String!
-}
-
 extend type Mutation {
   createPaymentOrder(amount: Int!): RazorpayOrder!
 }

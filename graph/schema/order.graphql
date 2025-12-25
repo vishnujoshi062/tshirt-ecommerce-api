@@ -1,7 +1,7 @@
 type Order {
   id: ID!
   userID: ID!
-  items: [OrderItem!]!
+  items: [OrderItem!]
   totalAmount: Float!
   discount: Float!
   promoCode: String

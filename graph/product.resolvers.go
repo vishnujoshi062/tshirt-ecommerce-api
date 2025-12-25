@@ -166,16 +166,6 @@ func (r *productVariantResolver) Price(ctx context.Context, obj *models.ProductV
 	return product.BasePrice + obj.PriceModifier, nil
 }
 
-// Product is the resolver for the product field.
-func (r *productVariantResolver) Product(ctx context.Context, obj *models.ProductVariant) (*models.Product, error) {
-	var product models.Product
-	if err := r.DB.First(&product, obj.ProductID).Error; err != nil {
-		return nil, fmt.Errorf("failed to load product")
-	}
-
-	return &product, nil
-}
-
 // Products is the resolver for the products field.
 func (r *queryResolver) Products(ctx context.Context, isActive *bool) ([]*models.Product, error) {
 	products, err := r.ProductRepository.GetAllProducts()

@@ -120,7 +120,7 @@ func (r *cartItemResolver) UpdatedAt(ctx context.Context, obj *models.CartItem) 
 // AddToCart is the resolver for the addToCart field.
 func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartInput) (*model.AddToCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	
+
 	// Dev mode: use dev user if no auth provided
 	var userID string
 	if user != nil {
@@ -178,7 +178,7 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 // RemoveCartItem is the resolver for the removeCartItem field.
 func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.RemoveCartItemInput) (*model.RemoveCartItemPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	
+
 	// Dev mode: use dev user if no auth provided
 	var userID string
 	if user != nil {
@@ -207,7 +207,7 @@ func (r *mutationResolver) RemoveCartItem(ctx context.Context, input model.Remov
 // ClearCart is the resolver for the clearCart field.
 func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartInput) (*model.ClearCartPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	
+
 	// Dev mode: use dev user if no auth provided
 	var userID string
 	if user != nil {
@@ -230,7 +230,7 @@ func (r *mutationResolver) ClearCart(ctx context.Context, input model.ClearCartI
 // AttachCartToUser is the resolver for the attachCartToUser field.
 func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.AttachCartToUserInput) (*model.AttachCartToUserPayload, error) {
 	user := middleware.GetUserFromContext(ctx)
-	
+
 	// Dev mode: use dev user if no auth provided
 	var userID string
 	if user != nil {
@@ -289,7 +289,7 @@ func (r *mutationResolver) AttachCartToUser(ctx context.Context, input model.Att
 func (r *queryResolver) GetCart(ctx context.Context, cartID *string, forUser *bool) (*models.Cart, error) {
 	if forUser != nil && *forUser {
 		user := middleware.GetUserFromContext(ctx)
-		
+
 		// Dev mode: use dev user if no auth provided
 		var userID string
 		if user != nil {
@@ -297,7 +297,7 @@ func (r *queryResolver) GetCart(ctx context.Context, cartID *string, forUser *bo
 		} else {
 			userID = "user_dev_123"
 		}
-		
+
 		return r.CartRepository.GetCartByUserID(userID)
 	}
 
