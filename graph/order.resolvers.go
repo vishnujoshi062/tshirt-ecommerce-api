@@ -13,6 +13,7 @@ import (
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/constants"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/middleware"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
@@ -127,7 +128,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.CreateOr
 			TotalAmount:     finalTotal,
 			Discount:        discount,
 			PromoCode:       input.PromoCode,
-			Status:          "pending",
+			Status:          constants.OrderPending,
 			ShippingAddress: input.ShippingAddress,
 			OrderItems:      orderItems,
 		}
@@ -187,11 +188,11 @@ func (r *mutationResolver) CancelOrder(ctx context.Context, orderID string) (*mo
 		return nil, err
 	}
 
-	if order.Status == "shipped" || order.Status == "delivered" {
+	if order.Status == constants.OrderShipped || order.Status == constants.OrderDelivered {
 		return nil, errors.New("order already shipped")
 	}
 
-	order.Status = "cancelled"
+	order.Status = constants.OrderCancelled
 
 	r.OrderRepository.UpdateOrder(order)
 

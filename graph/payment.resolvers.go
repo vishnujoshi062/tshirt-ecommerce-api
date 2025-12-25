@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
+	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/constants"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
 	"gorm.io/gorm"
 )
@@ -133,7 +134,7 @@ func (r *mutationResolver) VerifyPayment(ctx context.Context, input model.Verify
 	if err == nil && existingPayment != nil && existingPayment.ID > 0 {
 		log.Printf("Updating existing payment: %+v", existingPayment)
 		// Update existing payment
-		existingPayment.Status = "completed"
+		existingPayment.Status = constants.PaymentCompleted
 		existingPayment.TransactionID = input.RazorpayPaymentID
 		existingPayment.PaymentMethod = "razorpay"
 		err = r.PaymentRepository.UpdatePayment(existingPayment)
@@ -143,7 +144,7 @@ func (r *mutationResolver) VerifyPayment(ctx context.Context, input model.Verify
 		}
 
 		// Update order status
-		order.Status = "confirmed"
+		order.Status = constants.OrderConfirmed
 		err = r.OrderRepository.UpdateOrder(order)
 		if err != nil {
 			log.Printf("Error updating order status: %v", err)
@@ -159,7 +160,7 @@ func (r *mutationResolver) VerifyPayment(ctx context.Context, input model.Verify
 	payment := &models.Payment{
 		OrderID:       orderID,
 		Amount:        order.TotalAmount,
-		Status:        "completed",
+		Status:        constants.PaymentCompleted,
 		PaymentMethod: "razorpay",
 		TransactionID: input.RazorpayPaymentID,
 	}
@@ -171,7 +172,7 @@ func (r *mutationResolver) VerifyPayment(ctx context.Context, input model.Verify
 	}
 
 	// Update order status to confirmed
-	order.Status = "confirmed"
+	order.Status = constants.OrderConfirmed
 	err = r.OrderRepository.UpdateOrder(order)
 	if err != nil {
 		log.Printf("Error updating order status: %v", err)

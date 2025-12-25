@@ -2,14 +2,14 @@ package repository
 
 import (
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/internal/models"
-	"gorm.io/gorm"
+	"gorm.io/"
 )
 
 type PaymentRepository struct {
-	DB *gorm.DB
+	DB *.DB
 }
 
-func NewPaymentRepository(db *gorm.DB) *PaymentRepository {
+func NewPaymentRepository(db *.DB) *PaymentRepository {
 	return &PaymentRepository{DB: db}
 }
 
