@@ -19,13 +19,17 @@ func (r *ProductRepository) CreateProduct(product *models.Product) error {
 
 func (r *ProductRepository) GetProductByID(id uint) (*models.Product, error) {
 	var product models.Product
-	err := r.DB.Preload("Variants.Inventory").First(&product, id).Error
+	err := r.DB.Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("Inventory")
+	}).First(&product, id).Error
 	return &product, err
 }
 
 func (r *ProductRepository) GetAllProducts() ([]models.Product, error) {
 	var products []models.Product
-	err := r.DB.Preload("Variants.Inventory").Find(&products).Error
+	err := r.DB.Preload("Variants", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("Inventory")
+	}).Find(&products).Error
 	return products, err
 }
 

@@ -278,6 +278,16 @@ func (r *queryResolver) Products(ctx context.Context, isActive *bool) ([]*models
 			products[i].Variants = []models.ProductVariant{}
 		}
 
+		// Ensure inventory is loaded for each variant
+		for j := range products[i].Variants {
+			if products[i].Variants[j].Inventory == nil {
+				var inventory models.Inventory
+				if err := r.DB.Where("variant_id = ?", products[i].Variants[j].ID).First(&inventory).Error; err == nil {
+					products[i].Variants[j].Inventory = &inventory
+				}
+			}
+		}
+
 		// Backward compatibility: populate imageURLs from designImageURL if empty
 		if len(products[i].ImageURLs) == 0 && products[i].DesignImageURL != "" {
 			products[i].ImageURLs = pq.StringArray{products[i].DesignImageURL}
@@ -303,6 +313,16 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product
 
 	if product.Variants == nil {
 		product.Variants = []models.ProductVariant{}
+	}
+
+	// Ensure inventory is loaded for each variant
+	for i := range product.Variants {
+		if product.Variants[i].Inventory == nil {
+			var inventory models.Inventory
+			if err := r.DB.Where("variant_id = ?", product.Variants[i].ID).First(&inventory).Error; err == nil {
+				product.Variants[i].Inventory = &inventory
+			}
+		}
 	}
 
 	// Backward compatibility: populate imageURLs from designImageURL if empty
@@ -337,3 +357,4 @@ func (r *Resolver) ProductVariant() generated.ProductVariantResolver {
 type inventoryResolver struct{ *Resolver }
 type productResolver struct{ *Resolver }
 type productVariantResolver struct{ *Resolver }
+
