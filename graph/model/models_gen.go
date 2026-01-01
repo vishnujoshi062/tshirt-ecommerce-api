@@ -67,6 +67,7 @@ type ProductInput struct {
 	CareInstructions *string  `json:"careInstructions,omitempty"`
 	Weight           *float64 `json:"weight,omitempty"`
 	Featured         *bool    `json:"featured,omitempty"`
+	LimitedEdition   *bool    `json:"limitedEdition,omitempty"`
 }
 
 type ProductOptions struct {

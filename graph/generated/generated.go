@@ -171,6 +171,7 @@ type ComplexityRoot struct {
 		ID               func(childComplexity int) int
 		ImageURLs        func(childComplexity int) int
 		IsActive         func(childComplexity int) int
+		LimitedEdition   func(childComplexity int) int
 		Material         func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Neckline         func(childComplexity int) int
@@ -975,6 +976,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Product.IsActive(childComplexity), true
+	case "Product.limitedEdition":
+		if e.complexity.Product.LimitedEdition == nil {
+			break
+		}
+
+		return e.complexity.Product.LimitedEdition(childComplexity), true
 	case "Product.material":
 		if e.complexity.Product.Material == nil {
 			break
@@ -1675,6 +1682,7 @@ extend type Mutation {
   careInstructions: String
   weight: Float
   featured: Boolean
+  limitedEdition: Boolean
 }
 
 type ProductVariant {
@@ -1712,6 +1720,7 @@ input ProductInput {
   careInstructions: String
   weight: Float
   featured: Boolean
+  limitedEdition: Boolean
 }
 
 input ProductVariantInput {
@@ -3602,6 +3611,8 @@ func (ec *executionContext) fieldContext_Mutation_createProduct(ctx context.Cont
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -3681,6 +3692,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProduct(ctx context.Cont
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -5486,6 +5499,35 @@ func (ec *executionContext) fieldContext_Product_featured(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Product_limitedEdition(ctx context.Context, field graphql.CollectedField, obj *models.Product) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Product_limitedEdition,
+		func(ctx context.Context) (any, error) {
+			return obj.LimitedEdition, nil
+		},
+		nil,
+		ec.marshalOBoolean2bool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Product_limitedEdition(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Product",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProductOptions_sizes(ctx context.Context, field graphql.CollectedField, obj *model.ProductOptions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5964,6 +6006,8 @@ func (ec *executionContext) fieldContext_ProductVariant_product(_ context.Contex
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -6705,6 +6749,8 @@ func (ec *executionContext) fieldContext_Query_products(ctx context.Context, fie
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -6784,6 +6830,8 @@ func (ec *executionContext) fieldContext_Query_product(ctx context.Context, fiel
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -6863,6 +6911,8 @@ func (ec *executionContext) fieldContext_Query_productsByCategory(ctx context.Co
 				return ec.fieldContext_Product_weight(ctx, field)
 			case "featured":
 				return ec.fieldContext_Product_featured(ctx, field)
+			case "limitedEdition":
+				return ec.fieldContext_Product_limitedEdition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
 		},
@@ -9305,7 +9355,7 @@ func (ec *executionContext) unmarshalInputProductInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "designImageURL", "imageURLs", "basePrice", "material", "neckline", "sleeveType", "fit", "brand", "category", "careInstructions", "weight", "featured"}
+	fieldsInOrder := [...]string{"name", "description", "designImageURL", "imageURLs", "basePrice", "material", "neckline", "sleeveType", "fit", "brand", "category", "careInstructions", "weight", "featured", "limitedEdition"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9410,6 +9460,13 @@ func (ec *executionContext) unmarshalInputProductInput(ctx context.Context, obj 
 				return it, err
 			}
 			it.Featured = data
+		case "limitedEdition":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limitedEdition"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LimitedEdition = data
 		}
 	}
 
@@ -11306,6 +11363,8 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Product_weight(ctx, field, obj)
 		case "featured":
 			out.Values[i] = ec._Product_featured(ctx, field, obj)
+		case "limitedEdition":
+			out.Values[i] = ec._Product_limitedEdition(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

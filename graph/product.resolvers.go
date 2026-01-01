@@ -80,6 +80,9 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input model.Produc
 	if input.Featured != nil {
 		product.Featured = *input.Featured
 	}
+	if input.LimitedEdition != nil {
+		product.LimitedEdition = *input.LimitedEdition
+	}
 
 	if err := r.ProductRepository.CreateProduct(product); err != nil {
 		return nil, fmt.Errorf("failed to create product: %w", err)
@@ -144,6 +147,9 @@ func (r *mutationResolver) UpdateProduct(ctx context.Context, id string, input m
 	}
 	if input.Featured != nil {
 		product.Featured = *input.Featured
+	}
+	if input.LimitedEdition != nil {
+		product.LimitedEdition = *input.LimitedEdition
 	}
 
 	if err := r.ProductRepository.UpdateProduct(product); err != nil {
@@ -357,4 +363,3 @@ func (r *Resolver) ProductVariant() generated.ProductVariantResolver {
 type inventoryResolver struct{ *Resolver }
 type productResolver struct{ *Resolver }
 type productVariantResolver struct{ *Resolver }
-

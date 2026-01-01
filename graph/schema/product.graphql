@@ -17,6 +17,7 @@ type Product {
   careInstructions: String
   weight: Float
   featured: Boolean
+  limitedEdition: Boolean
 }
 
 type ProductVariant {
@@ -54,6 +55,7 @@ input ProductInput {
   careInstructions: String
   weight: Float
   featured: Boolean
+  limitedEdition: Boolean
 }
 
 input ProductVariantInput {

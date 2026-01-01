@@ -23,6 +23,7 @@ type Product struct {
     CareInstructions string            `gorm:"type:text"`
     Weight           float64           `gorm:"type:decimal(10,2)"`
     Featured         bool              `gorm:"default:false"`
+    LimitedEdition   bool              `gorm:"default:false"`
     
     IsActive         bool              `gorm:"default:true"`
     Variants         []ProductVariant  `gorm:"foreignKey:ProductID"`
