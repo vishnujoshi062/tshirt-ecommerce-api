@@ -99,6 +99,8 @@ func (s *PromoService) CreatePromoCode(ctx context.Context, input model.PromoCod
 		IsActive:       input.IsActive != nil && *input.IsActive,
 		UsageLimit:     input.UsageLimit,
 		UsageCount:     0,
+		ValidFrom:      nil,
+		ValidUntil:     nil,
 	}
 
 	if input.ValidFrom != nil {
@@ -129,11 +131,15 @@ func (s *PromoService) UpdatePromoCode(ctx context.Context, id string, input mod
 	if input.ValidFrom != nil {
 		validFrom, _ := time.Parse(time.RFC3339, *input.ValidFrom)
 		updates["valid_from"] = validFrom
+	} else {
+		updates["valid_from"] = nil
 	}
 
 	if input.ValidUntil != nil {
 		validUntil, _ := time.Parse(time.RFC3339, *input.ValidUntil)
 		updates["valid_until"] = validUntil
+	} else {
+		updates["valid_until"] = nil
 	}
 
 	return s.repo.Update(id, updates)
