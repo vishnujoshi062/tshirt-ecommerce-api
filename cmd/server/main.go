@@ -21,6 +21,10 @@ import (
 )
 
 func main() {
+
+	log.Println("ENV CHECK -> RAZORPAY_KEY_ID:", os.Getenv("RAZORPAY_KEY_ID"))
+	log.Println("ENV CHECK -> RAZORPAY_WEBHOOK_SECRET:", os.Getenv("RAZORPAY_WEBHOOK_SECRET"))
+
 	// Try to load .env file from different possible locations
 	possiblePaths := []string{
 		".env",
