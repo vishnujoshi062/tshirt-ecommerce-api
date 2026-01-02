@@ -158,7 +158,9 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 
 	if err == nil {
 		existing.Quantity += input.Quantity
-		r.CartRepository.UpdateItem(&existing)
+		if err := r.CartRepository.UpdateItem(&existing); err != nil {
+			return nil, fmt.Errorf("failed to update cart item: %w", err)
+		}
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		item := &models.CartItem{
 			CartID:    cart.ID,
@@ -166,12 +168,17 @@ func (r *mutationResolver) AddToCart(ctx context.Context, input model.AddToCartI
 			Quantity:  input.Quantity,
 			AddedAt:   time.Now(),
 		}
-		r.CartRepository.AddItem(item)
+		if err := r.CartRepository.AddItem(item); err != nil {
+			return nil, fmt.Errorf("failed to add item to cart: %w", err)
+		}
 	} else {
-		return nil, err
+		return nil, fmt.Errorf("failed to check existing cart item: %w", err)
 	}
 
-	cart, _ = r.CartRepository.GetCartByUserID(userID)
+	cart, err = r.CartRepository.GetCartByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve cart: %w", err)
+	}
 	return &model.AddToCartPayload{Cart: cart}, nil
 }
 
