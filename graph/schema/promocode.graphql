@@ -9,7 +9,7 @@ type PromoCode {
   discountType: DiscountType!
   discountValue: Float!
   validFrom: String
-  validUntil: String!
+  validUntil: String
   isActive: Boolean!
   usageLimit: Int
   usageCount: Int!
@@ -22,7 +22,7 @@ input PromoCodeInput {
   discountType: DiscountType!
   discountValue: Float!
   validFrom: String
-  validUntil: String!
+  validUntil: String
   isActive: Boolean
   usageLimit: Int
 }
