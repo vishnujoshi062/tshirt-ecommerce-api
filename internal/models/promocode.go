@@ -16,8 +16,8 @@ type PromoCode struct {
 	Code          string       `gorm:"uniqueIndex;not null" json:"code"`
 	DiscountType  DiscountType `gorm:"type:varchar(20);not null" json:"discountType"`
 	DiscountValue float64      `gorm:"type:decimal(10,2);not null" json:"discountValue"`
-	ValidFrom     *time.Time   `json:"validFrom"`
-	ValidUntil    time.Time    `gorm:"not null" json:"validUntil"`
+	ValidFrom     *time.Time   `gorm:"type:timestamp;null" json:"validFrom"`
+	ValidUntil    *time.Time   `gorm:"type:timestamp;null" json:"validUntil"`
 	IsActive      bool         `gorm:"default:true" json:"isActive"`
 	UsageLimit    *int         `json:"usageLimit"`
 	UsageCount    int          `gorm:"default:0" json:"usageCount"`

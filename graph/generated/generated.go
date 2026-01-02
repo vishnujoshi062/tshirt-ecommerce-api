@@ -339,7 +339,7 @@ type ProductVariantResolver interface {
 }
 type PromoCodeResolver interface {
 	ValidFrom(ctx context.Context, obj *models.PromoCode) (*string, error)
-	ValidUntil(ctx context.Context, obj *models.PromoCode) (string, error)
+	ValidUntil(ctx context.Context, obj *models.PromoCode) (*string, error)
 
 	CreatedAt(ctx context.Context, obj *models.PromoCode) (string, error)
 	UpdatedAt(ctx context.Context, obj *models.PromoCode) (string, error)
@@ -1767,7 +1767,7 @@ type PromoCode {
   discountType: DiscountType!
   discountValue: Float!
   validFrom: String
-  validUntil: String!
+  validUntil: String
   isActive: Boolean!
   usageLimit: Int
   usageCount: Int!
@@ -1780,7 +1780,7 @@ input PromoCodeInput {
   discountType: DiscountType!
   discountValue: Float!
   validFrom: String
-  validUntil: String!
+  validUntil: String
   isActive: Boolean
   usageLimit: Int
 }
@@ -6170,9 +6170,9 @@ func (ec *executionContext) _PromoCode_validUntil(ctx context.Context, field gra
 			return ec.resolvers.PromoCode().ValidUntil(ctx, obj)
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -9579,7 +9579,7 @@ func (ec *executionContext) unmarshalInputPromoCodeInput(ctx context.Context, ob
 			it.ValidFrom = data
 		case "validUntil":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validUntil"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11685,16 +11685,13 @@ func (ec *executionContext) _PromoCode(ctx context.Context, sel ast.SelectionSet
 		case "validUntil":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._PromoCode_validUntil(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 

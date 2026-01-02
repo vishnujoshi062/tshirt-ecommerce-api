@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/generated"
 	"github.com/vishnujoshi062/tshirt-ecommerce-api/graph/model"
@@ -15,57 +14,73 @@ import (
 
 // CreatePromoCode is the resolver for the createPromoCode field.
 func (r *mutationResolver) CreatePromoCode(ctx context.Context, input model.PromoCodeInput) (*models.PromoCode, error) {
-	panic(fmt.Errorf("not implemented: CreatePromoCode - createPromoCode"))
+	return r.Resolver.PromoCodeService.CreatePromoCode(ctx, input)
 }
 
 // UpdatePromoCode is the resolver for the updatePromoCode field.
 func (r *mutationResolver) UpdatePromoCode(ctx context.Context, id string, input model.PromoCodeInput) (*models.PromoCode, error) {
-	panic(fmt.Errorf("not implemented: UpdatePromoCode - updatePromoCode"))
+	return r.Resolver.PromoCodeService.UpdatePromoCode(ctx, id, input)
 }
 
 // DeletePromoCode is the resolver for the deletePromoCode field.
 func (r *mutationResolver) DeletePromoCode(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeletePromoCode - deletePromoCode"))
+	return r.Resolver.PromoCodeService.DeletePromoCode(ctx, id)
 }
 
 // TogglePromoCodeStatus is the resolver for the togglePromoCodeStatus field.
 func (r *mutationResolver) TogglePromoCodeStatus(ctx context.Context, id string) (*models.PromoCode, error) {
-	panic(fmt.Errorf("not implemented: TogglePromoCodeStatus - togglePromoCodeStatus"))
+	return r.Resolver.PromoCodeService.ToggleStatus(ctx, id)
 }
 
 // ValidFrom is the resolver for the validFrom field.
 func (r *promoCodeResolver) ValidFrom(ctx context.Context, obj *models.PromoCode) (*string, error) {
-	panic(fmt.Errorf("not implemented: ValidFrom - validFrom"))
+	if obj.ValidFrom == nil {
+		return nil, nil
+	}
+	validFromStr := obj.ValidFrom.String()
+	return &validFromStr, nil
 }
 
 // ValidUntil is the resolver for the validUntil field.
-func (r *promoCodeResolver) ValidUntil(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
+func (r *promoCodeResolver) ValidUntil(ctx context.Context, obj *models.PromoCode) (*string, error) {
+	if obj.ValidUntil == nil {
+		return nil, nil
+	}
+	validUntilStr := obj.ValidUntil.String()
+	return &validUntilStr, nil
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *promoCodeResolver) CreatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+	return obj.CreatedAt.String(), nil
 }
 
 // UpdatedAt is the resolver for the updatedAt field.
 func (r *promoCodeResolver) UpdatedAt(ctx context.Context, obj *models.PromoCode) (string, error) {
-	panic(fmt.Errorf("not implemented: UpdatedAt - updatedAt"))
+	return obj.UpdatedAt.String(), nil
 }
 
 // PromoCodes is the resolver for the promoCodes field.
 func (r *queryResolver) PromoCodes(ctx context.Context, isActive *bool) ([]*models.PromoCode, error) {
-	panic(fmt.Errorf("not implemented: PromoCodes - promoCodes"))
+	return r.Resolver.PromoCodeService.GetAllPromoCodes(ctx)
 }
 
 // PromoCode is the resolver for the promoCode field.
 func (r *queryResolver) PromoCode(ctx context.Context, code string) (*models.PromoCode, error) {
-	panic(fmt.Errorf("not implemented: PromoCode - promoCode"))
+	return r.Resolver.PromoCodeService.GetPromoCodeByID(ctx, code)
 }
 
 // ValidatePromoCode is the resolver for the validatePromoCode field.
 func (r *queryResolver) ValidatePromoCode(ctx context.Context, code string, orderAmount float64) (*model.PromoCodeValidation, error) {
-	panic(fmt.Errorf("not implemented: ValidatePromoCode - validatePromoCode"))
+	result, err := r.Resolver.PromoCodeService.ValidatePromoCode(code, orderAmount)
+	if err != nil {
+		return nil, err
+	}
+	return &model.PromoCodeValidation{
+		IsValid:        result.IsValid,
+		DiscountAmount: result.DiscountAmount,
+		Message:        &result.Message,
+	}, nil
 }
 
 // PromoCode returns generated.PromoCodeResolver implementation.

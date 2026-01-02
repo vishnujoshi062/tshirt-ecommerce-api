@@ -70,7 +70,7 @@ func main() {
 
 	// Initialize services
 	paymentService := service.NewPaymentService()
-	promoCodeService := service.NewPromoCodeService(promoCodeRepo)
+	promoCodeService := service.NewPromoService(promoCodeRepo)
 
 	// Initialize resolver
 	resolver := &graph.Resolver{

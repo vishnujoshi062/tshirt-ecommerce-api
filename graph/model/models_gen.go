@@ -93,7 +93,7 @@ type PromoCodeInput struct {
 	DiscountType  models.DiscountType `json:"discountType"`
 	DiscountValue float64             `json:"discountValue"`
 	ValidFrom     *string             `json:"validFrom,omitempty"`
-	ValidUntil    string              `json:"validUntil"`
+	ValidUntil    *string             `json:"validUntil,omitempty"`
 	IsActive      *bool               `json:"isActive,omitempty"`
 	UsageLimit    *int                `json:"usageLimit,omitempty"`
 }
