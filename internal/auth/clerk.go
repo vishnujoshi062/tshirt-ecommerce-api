@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
@@ -22,39 +24,44 @@ func ValidateClerkToken(authHeader string) (*ClerkClaims, error) {
 
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 
-	claims, err := jwt.Verify(context.Background(), &jwt.VerifyParams{
+	// 1️⃣ Verify signature + expiry with Clerk
+	verified, err := jwt.Verify(context.Background(), &jwt.VerifyParams{
 		Token: token,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// 2️⃣ Decode JWT payload manually
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, errors.New("invalid JWT format")
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil, err
+	}
+
+	// 3️⃣ Extract fields
+	email, _ := claims["email"].(string)
+
 	role := ""
-	email := ""
-
-	// Extract email and role from Custom claims (raw JWT claims)
-	if raw, ok := claims.Custom.(map[string]interface{}); ok {
-		// Extract email
-		if v, ok := raw["email"].(string); ok {
-			email = v
-		}
-
-		// Extract role from public_metadata
-		if pm, ok := raw["public_metadata"].(map[string]interface{}); ok {
-			if r, ok := pm["role"].(string); ok {
-				role = r
-			}
+	if pm, ok := claims["public_metadata"].(map[string]interface{}); ok {
+		if r, ok := pm["role"].(string); ok {
+			role = r
 		}
 	}
 
-	if role == "" {
-		log.Printf("CLERK AUTH: No role found for user %s", claims.Subject)
-	} else {
-		log.Printf("CLERK AUTH: Role '%s' for user %s", role, claims.Subject)
-	}
+	log.Printf("CLERK AUTH DEBUG: user=%s role=%s", verified.Subject, role)
 
 	return &ClerkClaims{
-		UserID: claims.Subject,
+		UserID: verified.Subject,
 		Email:  email,
 		Role:   role,
 	}, nil
