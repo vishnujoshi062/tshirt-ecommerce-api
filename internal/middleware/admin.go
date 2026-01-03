@@ -11,10 +11,10 @@ func RequireAdmin(ctx context.Context) error {
 		return errors.New("not authenticated")
 	}
 	
-	// TODO: Check if user has admin role from Clerk metadata
-	// For now, allow all authenticated users
-	// In production, check user.PublicMetadata or custom claims for admin role
-	// This can be done by checking Clerk's custom claims or metadata
+	// Check if user has admin role from Clerk metadata
+	if user.Role != "admin" {
+		return errors.New("access denied: admin role required")
+	}
 	
 	return nil
 }
