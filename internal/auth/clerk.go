@@ -29,20 +29,32 @@ func ValidateClerkToken(authHeader string) (*ClerkClaims, error) {
 		return nil, err
 	}
 
+	raw := claims.Claims // <-- THIS is the key
+
 	role := ""
-	if claims.PublicMetadata != nil {
-		if r, ok := claims.PublicMetadata["role"].(string); ok {
+	email := ""
+
+	// Extract email
+	if v, ok := raw["email"].(string); ok {
+		email = v
+	}
+
+	// Extract role from public_metadata
+	if pm, ok := raw["public_metadata"].(map[string]interface{}); ok {
+		if r, ok := pm["role"].(string); ok {
 			role = r
 		}
 	}
 
 	if role == "" {
-		log.Printf("CLERK AUTH: No admin role for user %s", claims.Subject)
+		log.Printf("CLERK AUTH: No role found for user %s", claims.Subject)
+	} else {
+		log.Printf("CLERK AUTH: Role '%s' for user %s", role, claims.Subject)
 	}
 
 	return &ClerkClaims{
 		UserID: claims.Subject,
-		Email:  claims.Email,
+		Email:  email,
 		Role:   role,
 	}, nil
 }
