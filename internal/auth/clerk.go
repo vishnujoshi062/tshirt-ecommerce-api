@@ -29,20 +29,21 @@ func ValidateClerkToken(authHeader string) (*ClerkClaims, error) {
 		return nil, err
 	}
 
-	raw := claims.Claims // <-- THIS is the key
-
 	role := ""
 	email := ""
 
-	// Extract email
-	if v, ok := raw["email"].(string); ok {
-		email = v
-	}
+	// Extract email and role from Custom claims (raw JWT claims)
+	if raw, ok := claims.Custom.(map[string]interface{}); ok {
+		// Extract email
+		if v, ok := raw["email"].(string); ok {
+			email = v
+		}
 
-	// Extract role from public_metadata
-	if pm, ok := raw["public_metadata"].(map[string]interface{}); ok {
-		if r, ok := pm["role"].(string); ok {
-			role = r
+		// Extract role from public_metadata
+		if pm, ok := raw["public_metadata"].(map[string]interface{}); ok {
+			if r, ok := pm["role"].(string); ok {
+				role = r
+			}
 		}
 	}
 
